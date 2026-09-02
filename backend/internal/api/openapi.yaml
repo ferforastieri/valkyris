@@ -1,0 +1,233 @@
+openapi: 3.1.0
+info:
+  title: Camtacte API
+  version: 1.0.0
+  description: Local-first home camera monitoring API.
+servers:
+  - url: https://camtacte.local:8443/api/v1
+security:
+  - bearerAuth: []
+paths:
+  /pair:
+    post:
+      security: []
+      summary: Exchange a single-use pairing code for a device token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PairRequest'}
+      responses:
+        '201': {description: Paired, content: {application/json: {schema: {$ref: '#/components/schemas/PairResponse'}}}}
+  /pairing-sessions:
+    post:
+      summary: Create a short-lived pairing session
+      responses: {'201': {description: Created, content: {application/json: {schema: {$ref: '#/components/schemas/PairingSession'}}}}}
+  /cameras:
+    get:
+      summary: List cameras and discovered capabilities
+      responses: {'200': {description: Cameras, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Camera'}}}}}}
+    post:
+      summary: Probe and add an ONVIF camera
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CameraInput'}}}}
+      responses: {'201': {description: Added, content: {application/json: {schema: {$ref: '#/components/schemas/Camera'}}}}}
+  /cameras/{id}:
+    delete:
+      summary: Remove a camera
+      parameters: [{$ref: '#/components/parameters/id'}]
+      responses: {'204': {description: Removed}}
+  /cameras/{id}/ptz:
+    post:
+      summary: Move or stop a PTZ camera
+      parameters: [{$ref: '#/components/parameters/id'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PTZCommand'}}}}
+      responses: {'204': {description: Command accepted}}
+  /cameras/{id}/snapshot:
+    get:
+      summary: Get a current authenticated snapshot
+      parameters: [{$ref: '#/components/parameters/id'}]
+      responses: {'200': {description: JPEG image, content: {image/jpeg: {schema: {type: string, contentEncoding: binary}}}}}
+  /cameras/{id}/live/index.m3u8:
+    get:
+      summary: Get the authenticated LL-HLS playlist
+      parameters: [{$ref: '#/components/parameters/id'}]
+      responses: {'200': {description: LL-HLS playlist}}
+  /detectors:
+    get:
+      summary: List normalized detector types
+      responses: {'200': {description: Detector catalog}}
+  /rules:
+    get:
+      summary: List automation rules
+      responses: {'200': {description: Rules, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Rule'}}}}}}
+    post:
+      summary: Create an automation rule
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/Rule'}}}}
+      responses: {'201': {description: Created}}
+  /rules/{id}:
+    delete:
+      summary: Delete an automation rule
+      parameters: [{$ref: '#/components/parameters/id'}]
+      responses: {'204': {description: Deleted}}
+  /events:
+    get:
+      summary: List recent events
+      responses: {'200': {description: Events, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Event'}}}}}}
+  /events/{id}:
+    get:
+      summary: Get event metadata
+      parameters: [{$ref: '#/components/parameters/id'}]
+      responses: {'200': {description: Event, content: {application/json: {schema: {$ref: '#/components/schemas/Event'}}}}}
+  /events/{id}/acknowledge:
+    post:
+      summary: Acknowledge and stop an event alarm
+      parameters: [{$ref: '#/components/parameters/id'}]
+      responses: {'204': {description: Acknowledged}}
+  /events/{id}/clip:
+    get:
+      summary: Stream the event MP4 clip
+      parameters: [{$ref: '#/components/parameters/id'}]
+      responses: {'200': {description: MP4 clip}}
+  /events/{id}/snapshot:
+    get:
+      summary: Download the event JPEG snapshot
+      parameters: [{$ref: '#/components/parameters/id'}]
+      responses: {'200': {description: JPEG snapshot}}
+  /devices/push:
+    post:
+      summary: Register a UnifiedPush endpoint and encryption secret
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PushDevice'}}}}
+      responses: {'204': {description: Registered}}
+  /detections:
+    post:
+      summary: Submit a normalized detection from a trusted local integration
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/Detection'}}}}
+      responses: {'200': {description: Events created by matching rules}}
+  /realtime:
+    get:
+      summary: WebSocket stream for event changes
+      responses: {'101': {description: Switching Protocols}}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer}
+  parameters:
+    id: {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+  schemas:
+    CapabilitySet:
+      type: object
+      required: [snapshot, events, ptz, zoom, presets, audio]
+      properties:
+        snapshot: {type: boolean}
+        events: {type: boolean}
+        ptz: {type: boolean}
+        zoom: {type: boolean}
+        presets: {type: boolean}
+        audio: {type: boolean}
+    Camera:
+      type: object
+      required: [id, name, host, capabilities, enabled]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+        host: {type: string}
+        port: {type: integer}
+        profileToken: {type: string}
+        capabilities: {$ref: '#/components/schemas/CapabilitySet'}
+        enabled: {type: boolean}
+    CameraInput:
+      type: object
+      required: [name, host, username, password, rtspUri]
+      properties:
+        name: {type: string}
+        host: {type: string}
+        port: {type: integer, default: 2020}
+        username: {type: string}
+        password: {type: string, format: password}
+        rtspUri: {type: string, format: uri}
+    PTZCommand:
+      type: object
+      required: [action]
+      properties:
+        action: {type: string, enum: [move, relative, stop]}
+        pan: {type: number, minimum: -1, maximum: 1}
+        tilt: {type: number, minimum: -1, maximum: 1}
+        zoom: {type: number, minimum: -1, maximum: 1}
+    Rule:
+      type: object
+      required: [cameraId, name, detectorTypes, actions]
+      properties:
+        id: {type: string, format: uuid}
+        cameraId: {type: string, format: uuid}
+        name: {type: string}
+        detectorTypes: {type: array, items: {type: string}}
+        minConfidence: {type: number, minimum: 0, maximum: 1, default: 0.65}
+        confirmations: {type: integer, minimum: 1, default: 2}
+        cooldownSeconds: {type: integer, minimum: 1, default: 60}
+        schedule: {$ref: '#/components/schemas/Schedule'}
+        actions: {$ref: '#/components/schemas/Actions'}
+        enabled: {type: boolean}
+    Schedule:
+      type: object
+      properties:
+        days: {type: array, items: {type: integer, minimum: 0, maximum: 6}}
+        start: {type: string, pattern: '^\\d{2}:\\d{2}$'}
+        end: {type: string, pattern: '^\\d{2}:\\d{2}$'}
+        timezone: {type: string}
+    Actions:
+      type: object
+      properties:
+        record: {type: boolean}
+        notify: {type: boolean}
+        alarm: {type: boolean}
+    Event:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        cameraId: {type: string, format: uuid}
+        ruleId: {type: string, format: uuid}
+        type: {type: string}
+        confidence: {type: number}
+        occurredAt: {type: string, format: date-time}
+        snapshotPath: {type: string}
+        clipPath: {type: string}
+        acknowledgedAt: {type: string, format: date-time}
+    PushDevice:
+      type: object
+      properties:
+        endpoint: {type: string, format: uri}
+        secret: {type: string}
+    PairingSession:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        code: {type: string}
+        publicUrl: {type: string, format: uri}
+        fingerprint: {type: string}
+        uri: {type: string, format: uri}
+        expiresAt: {type: string, format: date-time}
+    PairRequest:
+      type: object
+      required: [code, deviceName]
+      properties:
+        code: {type: string}
+        deviceName: {type: string}
+        locale: {type: string, default: pt-BR}
+    PairResponse:
+      type: object
+      properties:
+        deviceId: {type: string, format: uuid}
+        token: {type: string}
+    MediaAsset:
+      type: object
+      properties:
+        type: {type: string, enum: [snapshot, clip]}
+        path: {type: string}
+        createdAt: {type: string, format: date-time}
+    Detection:
+      type: object
+      required: [cameraId, type, confidence]
+      properties:
+        cameraId: {type: string, format: uuid}
+        type: {type: string}
+        confidence: {type: number, minimum: 0, maximum: 1}
+        metadata: {type: object, additionalProperties: true}

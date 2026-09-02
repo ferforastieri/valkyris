@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta http-equiv="refresh" content="0;url=/pt-BR" />
+    <title>Camtacte</title>
+    <script is:inline>
+      const saved = localStorage.getItem('camtacte-locale');
+      location.replace(saved === 'en' ? '/en' : '/pt-BR');
+    </script>
+  </head>
+  <body><a href="/pt-BR">Camtacte em Português</a></body>
+</html>

@@ -1,0 +1,30 @@
+---
+import '@fontsource-variable/bricolage-grotesque';
+import '@fontsource-variable/manrope';
+import '@fontsource/ibm-plex-mono/400.css';
+import '../styles/global.css';
+import type { Locale } from '../content/copy';
+interface Props { locale: Locale; title: string; description: string; }
+const { locale, title, description } = Astro.props;
+---
+<!doctype html>
+<html lang={locale} data-theme="auto">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#101310" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#E8E9E5" media="(prefers-color-scheme: light)" />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+    <link rel="alternate" hreflang="pt-BR" href={new URL('/pt-BR', Astro.site)} />
+    <link rel="alternate" hreflang="en" href={new URL('/en', Astro.site)} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>{title}</title>
+    <script is:inline>
+      const saved = localStorage.getItem('camtacte-theme');
+      if (saved) document.documentElement.dataset.theme = saved;
+      localStorage.setItem('camtacte-locale', document.documentElement.lang);
+    </script>
+  </head>
+  <body><slot /></body>
+</html>

@@ -1,0 +1,129 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+  attestations: write
+
+jobs:
+  image:
+    name: Imagem multiarch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: metadata
+        with:
+          images: ghcr.io/ferforastieri/camtacte
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest
+      - name: Publicar amd64/arm64 com SBOM e proveniência
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          provenance: mode=max
+          sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  release:
+    name: APK e artefatos
+    runs-on: ubuntu-latest
+    needs: [image, smoke]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - name: SDK Android 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Preparar chave de assinatura
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/camtacte.jks"
+      - name: Compilar APK assinado
+        working-directory: mobile
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/camtacte.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew --stacktrace lintRelease testDebugUnitTest assembleRelease
+      - name: Montar release verificável
+        env:
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: |
+          mkdir -p release
+          cp mobile/app/build/outputs/apk/release/app-release.apk release/camtacte-${RELEASE_VERSION}.apk
+          cp compose.yaml mediamtx.yml install.sh release/
+          cp backend/internal/api/openapi.yaml release/openapi.yaml
+          printf '%s\n' "$RELEASE_VERSION" > release/VERSION
+          cd release
+          sha256sum camtacte-*.apk compose.yaml mediamtx.yml install.sh openapi.yaml VERSION > SHA256SUMS
+      - name: Publicar GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${GITHUB_REF_NAME}" release/* --generate-notes --verify-tag
+
+  smoke:
+    name: Smoke · ${{ matrix.platform }}
+    runs-on: ubuntu-latest
+    needs: image
+    strategy:
+      matrix:
+        include:
+          - platform: linux/amd64
+            port: 18443
+            container: camtacte-smoke-amd64
+          - platform: linux/arm64
+            port: 18444
+            container: camtacte-smoke-arm64
+    steps:
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Iniciar e verificar imagem
+        env:
+          IMAGE: ghcr.io/ferforastieri/camtacte:${{ github.ref_name }}
+          PLATFORM: ${{ matrix.platform }}
+          PORT: ${{ matrix.port }}
+          CONTAINER: ${{ matrix.container }}
+        run: |
+          docker pull --platform "$PLATFORM" "$IMAGE"
+          docker run -d --rm --platform "$PLATFORM" --name "$CONTAINER" -p "127.0.0.1:${PORT}:8443" "$IMAGE"
+          for attempt in $(seq 1 30); do
+            if curl -kfsS "https://127.0.0.1:${PORT}/health" | grep -q '"status":"ok"'; then
+              docker stop "$CONTAINER"
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs "$CONTAINER"
+          docker stop "$CONTAINER"
+          exit 1

@@ -1,0 +1,37 @@
+logLevel: info
+api: true
+apiAddress: :9997
+apiEncryption: false
+hls: true
+hlsAddress: :8888
+hlsEncryption: false
+hlsAlwaysRemux: true
+hlsVariant: lowLatency
+hlsSegmentCount: 7
+hlsSegmentDuration: 1s
+hlsPartDuration: 200ms
+rtsp: false
+rtmp: false
+srt: false
+webrtc: false
+playback: false
+metrics: false
+pprof: false
+authMethod: internal
+authInternalUsers:
+  - user: any
+    ips: ["127.0.0.1", "::1", "172.16.0.0/12"]
+    permissions:
+      - action: read
+      - action: publish
+      - action: api
+paths:
+  all_others:
+    source: publisher
+    record: true
+    recordPath: /data/recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+    recordFormat: fmp4
+    recordPartDuration: 1s
+    recordSegmentDuration: 2s
+    recordDeleteAfter: 10m
+

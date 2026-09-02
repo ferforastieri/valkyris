@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend · Go
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - name: Formatação
+        run: test -z "$(gofmt -l .)"
+      - name: Análise estática
+        run: go vet ./...
+      - name: Testes
+        run: go test -race -coverprofile=coverage.out ./...
+      - name: Compilação
+        run: CGO_ENABLED=1 go build -trimpath ./cmd/camtacte
+
+  web:
+    name: Web · Astro
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+      - name: Dependências
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck, build e testes
+        working-directory: web
+        run: pnpm test
+
+  android:
+    name: Mobile · Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - name: SDK Android 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Lint, testes e APK debug
+        working-directory: mobile
+        run: ./gradlew --stacktrace lintDebug testDebugUnitTest assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: camtacte-debug
+          path: mobile/app/build/outputs/apk/debug/app-debug.apk
+
+  container:
+    name: Container · Docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build da imagem amd64
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: camtacte:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Validar Compose
+        run: docker compose config --quiet
+      - name: Smoke test HTTPS
+        run: |
+          docker run -d --rm --name camtacte-ci -p 127.0.0.1:18443:8443 camtacte:ci
+          for attempt in $(seq 1 20); do
+            if curl -kfsS https://127.0.0.1:18443/health | grep -q '"status":"ok"'; then
+              docker stop camtacte-ci
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs camtacte-ci
+          docker stop camtacte-ci
+          exit 1

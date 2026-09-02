@@ -1,0 +1,24 @@
+{
+  "name": "@camtacte/web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.15.0",
+  "scripts": {
+    "sync-assets": "node scripts/sync-public-assets.mjs",
+    "dev": "pnpm sync-assets && astro dev",
+    "build": "pnpm sync-assets && astro check && astro build",
+    "preview": "astro preview",
+    "test": "pnpm build && node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@fontsource-variable/bricolage-grotesque": "^5.2.8",
+    "@fontsource-variable/manrope": "^5.2.8",
+    "@fontsource/ibm-plex-mono": "^5.2.8",
+    "astro": "^5.13.5",
+    "@lucide/astro": "^0.556.0",
+    "typescript": "^5.9.2"
+  },
+  "devDependencies": {}
+}

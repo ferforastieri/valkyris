@@ -1,0 +1,98 @@
+---
+import { Activity, ArrowRight, BellRing, Check, ChevronDown, CodeXml, Download, Languages, LockKeyhole, Moon, Server, ShieldCheck, Sun, Video, Wifi } from '@lucide/astro';
+import { copy, type Locale } from '../content/copy';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Signal from './Signal.astro';
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const t = copy[locale];
+const other = locale === 'pt-BR' ? '/en' : '/pt-BR';
+const command = 'curl -fsSL https://camtacte.vercel.app/install.sh | sh';
+---
+<BaseLayout locale={locale} title={t.metaTitle} description={t.metaDescription}>
+  <header class="topbar">
+    <a class="brand" href={`/${locale}`} aria-label="Camtacte home"><span class="brand-mark"><Activity size={19} stroke-width={2.4} /></span><span>Camtacte</span></a>
+    <nav aria-label="Main navigation">
+      <a href="#overview">{t.nav[0]}</a><a href="#flow">{t.nav[1]}</a><a href="#install">{t.nav[2]}</a><a href="#compatibility">{t.nav[3]}</a>
+    </nav>
+    <div class="top-actions">
+      <a class="icon-button" href={other} aria-label="Change language"><Languages size={18} /></a>
+      <button class="icon-button theme-toggle" type="button" aria-label="Toggle theme"><Sun class="sun" size={18}/><Moon class="moon" size={18}/></button>
+      <a class="button small dark" href="https://github.com/ferforastieri/camtacte"><CodeXml size={16}/><span>GitHub</span></a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="overview">
+      <div class="hero-copy reveal">
+        <p class="eyebrow"><span></span>{t.heroEyebrow}</p>
+        <h1>{t.heroTitle.split('\n').map((line) => <span>{line}</span>)}</h1>
+        <p class="lede">{t.heroBody}</p>
+        <div class="hero-actions">
+          <a class="button dark" href="#install"><Download size={17}/>{t.install}</a>
+          <a class="button quiet" href="https://github.com/ferforastieri/camtacte">{t.github}<ArrowRight size={17}/></a>
+        </div>
+        <div class="trust-row"><ShieldCheck size={17}/><span>MIT · ONVIF Profile S · LAN / VPN</span></div>
+      </div>
+      <div class="camera-window reveal delayed">
+        <div class="camera-toolbar"><div class="camera-name"><span class="status-dot"></span>{t.camera}</div><div class="live-pill">{t.live}</div></div>
+        <div class="camera-scene" aria-hidden="true">
+          <div class="scene-grid"></div><div class="door"></div><div class="plant"><i></i><i></i><i></i></div><div class="timestamp">20:41:08<br/>CAM 01</div>
+          <Signal class="hero-signal" />
+        </div>
+        <div class="camera-footer"><div><Check size={16}/><span>{t.status}</span></div><span>1080p · 15 fps</span></div>
+        <div class="alert-card"><span class="alert-icon"><BellRing size={18}/></span><div><strong>{t.alert}</strong><small>{t.alertMeta}</small></div><ChevronDown size={17}/></div>
+      </div>
+    </section>
+
+    <section class="principles section" aria-labelledby="principles-title">
+      <div class="section-intro"><p class="eyebrow"><span></span>LOCAL-FIRST</p><h2 id="principles-title">{t.principlesTitle}</h2><p>{t.principlesBody}</p></div>
+      <div class="principle-grid">{t.principles.map(([title,body],i)=><article><span class="principle-icon">{i===0?<Server size={21}/>:i===1?<LockKeyhole size={21}/>:<Wifi size={21}/>}</span><h3>{title}</h3><p>{body}</p></article>)}</div>
+    </section>
+
+    <section class="detect section dark-section">
+      <div class="detect-copy"><p class="eyebrow light"><span></span>DETECTION LAYERS</p><h2>{t.detectTitle.split('\n').map((line)=><span>{line}</span>)}</h2><p>{t.detectBody}</p></div>
+      <div class="detector-orbit" aria-label="Detector catalog">
+        <Signal class="detector-signal" />
+        <div class="detector-list">{t.detectors.map((item,i) => {
+          const positions = [[0,0],[48,15],[8,31],[52,47],[2,63],[48,79],[13,92]];
+          const [left, top] = positions[i] ?? [0, 0];
+          return <span style={`left:${left}%;top:${top}%`}><i></i>{item}</span>;
+        })}</div>
+      </div>
+    </section>
+
+    <section class="flow section" id="flow">
+      <div class="section-heading"><p class="eyebrow"><span></span>PIPELINE</p><h2>{t.flowTitle}</h2></div>
+      <div class="flow-line">{t.flow.map(([title,body],i)=><article><div class="flow-number">0{i+1}</div><span class="flow-icon">{i===0?<Video size={22}/>:i===1?<Server size={22}/>:<BellRing size={22}/>}</span><h3>{title}</h3><p>{body}</p></article>)}</div>
+    </section>
+
+    <section class="app-section section">
+      <div class="phone-stage">
+        <div class="phone phone-back"><div class="phone-screen"><div class="phone-title">Timeline</div>{['Baby cry','Motion','Doorbell'].map((v,i)=><div class="mini-event"><span class={i===0?'danger':''}></span><div><strong>{v}</strong><small>{i===0?'Now · 91%':'Today · 18:2'+i}</small></div></div>)}</div></div>
+        <div class="phone phone-front"><div class="phone-screen live-screen"><div class="phone-top"><b>{t.camera}</b><span></span></div><div class="phone-video"><div class="door"></div><Signal /></div><div class="ptz"><button>↑</button><div><button>←</button><button>●</button><button>→</button></div><button>↓</button></div><div class="phone-nav"><span class="active"></span><span></span><span></span><span></span></div></div></div>
+      </div>
+      <div class="app-copy"><p class="eyebrow"><span></span>ANDROID NATIVE</p><h2>{t.appTitle.split('\n').map((line)=><span>{line}</span>)}</h2><p>{t.appBody}</p><ul><li><Check size={16}/>Kotlin + Jetpack Compose</li><li><Check size={16}/>UnifiedPush / ntfy</li><li><Check size={16}/>LL-HLS authenticated</li></ul></div>
+    </section>
+
+    <section class="install section" id="install">
+      <div class="install-header"><p class="eyebrow"><span></span>QUICK START</p><h2>{t.setupTitle}</h2></div>
+      <div class="steps">{t.steps.map(([title,body],i)=><article><span>0{i+1}</span><h3>{title}</h3><p>{body}</p></article>)}</div>
+      <div class="terminal"><div class="terminal-bar"><span></span><span></span><span></span><b>install.sh</b></div><div class="terminal-command"><code>{command}</code><button class="copy-command" data-command={command} aria-label="Copy install command">COPY</button></div><div class="terminal-output"><span>✓ Docker Compose detected</span><span>✓ TLS identity generated</span><span>✓ Camtacte is listening on :8443</span></div></div>
+    </section>
+
+    <section class="compatibility section" id="compatibility">
+      <div class="compat-card"><div><p class="eyebrow"><span></span>ONVIF PROFILE S</p><h2>{t.compatibilityTitle}</h2><p>{t.compatibilityBody}</p></div><div class="capability-list">{['RTSP / H.264','ONVIF events','PTZ','Audio tagging','Snapshots','Capability fallback'].map(item=><span><Check size={16}/>{item}</span>)}</div></div>
+    </section>
+
+    <section class="faq section"><div><p class="eyebrow"><span></span>FAQ</p><h2>{t.faqTitle}</h2></div><div class="faq-list">{t.faq.map(([q,a])=><details><summary>{q}<ChevronDown size={18}/></summary><p>{a}</p></details>)}</div></section>
+  </main>
+
+  <footer><div class="footer-brand"><span class="brand-mark"><Activity size={19}/></span><strong>Camtacte</strong></div><p>{t.footer}<br/><small>{t.disclaimer}</small></p><div><a href="https://github.com/ferforastieri/camtacte">GitHub</a><a href="/openapi.yaml">OpenAPI</a><a href={other}>{locale==='pt-BR'?'English':'Português'}</a></div></footer>
+
+  <script>
+    const root=document.documentElement;
+    document.querySelector('.theme-toggle')?.addEventListener('click',()=>{const current=root.dataset.theme;const dark=current==='dark'||(current==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);root.dataset.theme=dark?'light':'dark';localStorage.setItem('camtacte-theme',root.dataset.theme)});
+    document.querySelector('.copy-command')?.addEventListener('click',async(event)=>{const button=event.currentTarget as HTMLButtonElement;await navigator.clipboard.writeText(button.dataset.command||'');const previous=button.textContent;button.textContent='COPIED';setTimeout(()=>button.textContent=previous,1400)});
+  </script>
+</BaseLayout>
