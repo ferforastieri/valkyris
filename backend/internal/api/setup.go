@@ -10,18 +10,22 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ferforastieri/camtacte/backend/internal/auth"
+	"github.com/ferforastieri/valkyris/backend/internal/auth"
 	qrcode "github.com/skip2/go-qrcode"
 )
 
-const setupCookieName = "camtacte_setup"
+const setupCookieName = "valkyris_setup"
 
 //go:embed setup.html
 var setupHTML string
 
+//go:embed valkyris-mark.png
+var setupBrandMark []byte
+
 var setupTemplate = template.Must(template.New("setup").Parse(setupHTML))
 
 type setupPageData struct {
+	BrandMark template.URL
 	QRCode    template.URL
 	PairURI   template.URL
 	Code      string
@@ -62,6 +66,7 @@ func (s *Server) setupPage(w http.ResponseWriter, r *http.Request) {
 	}
 	var page bytes.Buffer
 	err = setupTemplate.Execute(&page, setupPageData{
+		BrandMark: template.URL("data:image/png;base64," + base64.StdEncoding.EncodeToString(setupBrandMark)),
 		QRCode:    template.URL("data:image/png;base64," + base64.StdEncoding.EncodeToString(png)),
 		PairURI:   template.URL(session.URI),
 		Code:      session.Code,
@@ -117,7 +122,7 @@ func (s *Server) authorizeSetup(w http.ResponseWriter, r *http.Request, allowQue
 	if s.setupToken == "" {
 		return false
 	}
-	candidates := []string{r.Header.Get("X-Camtacte-Setup-Key")}
+	candidates := []string{r.Header.Get("X-Valkyris-Setup-Key")}
 	if cookie, err := r.Cookie(setupCookieName); err == nil {
 		candidates = append(candidates, cookie.Value)
 	}
@@ -146,7 +151,7 @@ func (s *Server) setupDenied(w http.ResponseWriter) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'")
 	w.WriteHeader(http.StatusUnauthorized)
-	_, _ = w.Write([]byte(`<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Camtacte</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#e8e9e5;color:#242724;font:16px system-ui}.card{max-width:34rem;margin:1.5rem;padding:2rem;border-radius:24px;background:#f9faf7;box-shadow:0 18px 50px #24272418}h1{margin:0 0 .7rem}p{color:#70766f;line-height:1.6}@media(prefers-color-scheme:dark){body{background:#101310;color:#f1f4ef}.card{background:#1a1f1a}p{color:#a6afa5}}</style><main class="card"><h1>Use o endereço completo</h1><p>Abra a URL de configuração exibida pelo instalador do Camtacte neste navegador.</p></main></html>`))
+	_, _ = w.Write([]byte(`<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Valkyris</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#e8e9e5;color:#242724;font:16px system-ui}.card{max-width:34rem;margin:1.5rem;padding:2rem;border-radius:24px;background:#f9faf7;box-shadow:0 18px 50px #24272418}h1{margin:0 0 .7rem}p{color:#70766f;line-height:1.6}@media(prefers-color-scheme:dark){body{background:#101310;color:#f1f4ef}.card{background:#1a1f1a}p{color:#a6afa5}}</style><main class="card"><h1>Use o endereço completo</h1><p>Abra a URL de configuração exibida pelo instalador do Valkyris neste navegador.</p></main></html>`))
 }
 
 func terminalQRCode(bitmap [][]bool) string {

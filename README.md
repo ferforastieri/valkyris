@@ -1,10 +1,10 @@
-# Camtacte
+# Valkyris
 
-Camtacte is a local-first home camera monitor for ONVIF Profile S cameras. It
+Valkyris is a local-first home camera monitor for ONVIF Profile S cameras. It
 keeps credentials, video analysis and recordings at home while delivering
 important events to a native Android app.
 
-> Camtacte is independent software and is not affiliated with TP-Link or Tapo.
+> Valkyris is independent software and is not affiliated with TP-Link or Tapo.
 
 ## What is included
 
@@ -18,10 +18,10 @@ important events to a native Android app.
 ## Quick start
 
 Provision the camera on Wi-Fi and create its ONVIF/RTSP camera account first.
-Then install Camtacte on a machine that can reach the camera:
+Then install Valkyris on a machine that can reach the camera:
 
 ```bash
-curl -fsSL https://camtacte.vercel.app/install.sh | sh
+curl -fsSL https://valkyris.vercel.app/install.sh | sh
 ```
 
 For development:

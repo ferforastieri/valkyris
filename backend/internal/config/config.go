@@ -26,23 +26,23 @@ type Config struct {
 }
 
 func Load() Config {
-	data := env("CAMTACTE_DATA_DIR", "./data")
+	data := env("VALKYRIS_DATA_DIR", "./data")
 	return Config{
-		Listen:          env("CAMTACTE_LISTEN", ":8443"),
+		Listen:          env("VALKYRIS_LISTEN", ":8443"),
 		DataDir:         data,
-		DatabasePath:    env("CAMTACTE_DATABASE", filepath.Join(data, "camtacte.db")),
-		PublicURL:       env("CAMTACTE_PUBLIC_URL", "https://localhost:8443"),
-		TLSCert:         env("CAMTACTE_TLS_CERT", filepath.Join(data, "tls", "server.crt")),
-		TLSKey:          env("CAMTACTE_TLS_KEY", filepath.Join(data, "tls", "server.key")),
-		MasterKeyFile:   env("CAMTACTE_MASTER_KEY_FILE", filepath.Join(data, "secrets", "master.key")),
-		MediaURL:        env("CAMTACTE_MEDIA_URL", "http://localhost:8888"),
-		MediaAPI:        env("CAMTACTE_MEDIA_API", "http://localhost:9997"),
-		RecordingsDir:   env("CAMTACTE_MEDIA_RECORDINGS", filepath.Join(data, "recordings")),
-		ModelsDir:       env("CAMTACTE_MODELS_DIR", "./models"),
+		DatabasePath:    env("VALKYRIS_DATABASE", filepath.Join(data, "valkyris.db")),
+		PublicURL:       env("VALKYRIS_PUBLIC_URL", "https://localhost:8443"),
+		TLSCert:         env("VALKYRIS_TLS_CERT", filepath.Join(data, "tls", "server.crt")),
+		TLSKey:          env("VALKYRIS_TLS_KEY", filepath.Join(data, "tls", "server.key")),
+		MasterKeyFile:   env("VALKYRIS_MASTER_KEY_FILE", filepath.Join(data, "secrets", "master.key")),
+		MediaURL:        env("VALKYRIS_MEDIA_URL", "http://localhost:8888"),
+		MediaAPI:        env("VALKYRIS_MEDIA_API", "http://localhost:9997"),
+		RecordingsDir:   env("VALKYRIS_MEDIA_RECORDINGS", filepath.Join(data, "recordings")),
+		ModelsDir:       env("VALKYRIS_MODELS_DIR", "./models"),
 		RetentionAge:    7 * 24 * time.Hour,
 		RetentionBytes:  5 * 1024 * 1024 * 1024,
 		PairingLifetime: 10 * time.Minute,
-		SetupToken:      os.Getenv("CAMTACTE_SETUP_TOKEN"),
+		SetupToken:      os.Getenv("VALKYRIS_SETUP_TOKEN"),
 	}
 }
 

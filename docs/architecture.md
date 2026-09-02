@@ -1,6 +1,6 @@
 # Architecture
 
-Camtacte is a single-home system. The Go process is the security boundary: apps
+Valkyris is a single-home system. The Go process is the security boundary: apps
 never receive camera passwords and MediaMTX is not published on a host port.
 
 1. The camera is added by address and camera-account credentials.

@@ -1,8 +1,8 @@
-name: camtacte
+name: valkyris
 
 services:
-  camtacte:
-    image: ghcr.io/ferforastieri/camtacte:${CAMTACTE_VERSION:-latest}
+  valkyris:
+    image: ghcr.io/ferforastieri/valkyris:${VALKYRIS_VERSION:-latest}
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -11,22 +11,22 @@ services:
       mediamtx:
         condition: service_started
     environment:
-      CAMTACTE_LISTEN: :8443
-      CAMTACTE_DATA_DIR: /data
-      CAMTACTE_DATABASE: /data/camtacte.db
-      CAMTACTE_PUBLIC_URL: ${CAMTACTE_PUBLIC_URL:-https://localhost:8443}
-      CAMTACTE_TLS_CERT: /data/tls/server.crt
-      CAMTACTE_TLS_KEY: /data/tls/server.key
-      CAMTACTE_MASTER_KEY_FILE: /data/secrets/master.key
-      CAMTACTE_SETUP_TOKEN: ${CAMTACTE_SETUP_TOKEN:-}
-      CAMTACTE_MEDIA_URL: http://mediamtx:8888
-      CAMTACTE_MEDIA_API: http://mediamtx:9997
-      CAMTACTE_MEDIA_RECORDINGS: /data/recordings
+      VALKYRIS_LISTEN: :8443
+      VALKYRIS_DATA_DIR: /data
+      VALKYRIS_DATABASE: /data/valkyris.db
+      VALKYRIS_PUBLIC_URL: ${VALKYRIS_PUBLIC_URL:-https://localhost:8443}
+      VALKYRIS_TLS_CERT: /data/tls/server.crt
+      VALKYRIS_TLS_KEY: /data/tls/server.key
+      VALKYRIS_MASTER_KEY_FILE: /data/secrets/master.key
+      VALKYRIS_SETUP_TOKEN: ${VALKYRIS_SETUP_TOKEN:-}
+      VALKYRIS_MEDIA_URL: http://mediamtx:8888
+      VALKYRIS_MEDIA_API: http://mediamtx:9997
+      VALKYRIS_MEDIA_RECORDINGS: /data/recordings
     ports:
-      - "${CAMTACTE_PORT:-8443}:8443"
+      - "${VALKYRIS_PORT:-8443}:8443"
     volumes:
-      - camtacte-data:/data
-    networks: [camtacte]
+      - valkyris-data:/data
+    networks: [valkyris]
     healthcheck:
       test: ["CMD", "wget", "--no-check-certificate", "-qO-", "https://localhost:8443/health"]
       interval: 15s
@@ -41,17 +41,17 @@ services:
     command: ["/etc/mediamtx.yml"]
     volumes:
       - ./mediamtx.yml:/etc/mediamtx.yml:ro
-      - camtacte-data:/data
+      - valkyris-data:/data
     expose:
       - "8888"
       - "9997"
-    networks: [camtacte]
+    networks: [valkyris]
     security_opt:
       - no-new-privileges:true
 
 networks:
-  camtacte:
+  valkyris:
     internal: false
 
 volumes:
-  camtacte-data:
+  valkyris-data:

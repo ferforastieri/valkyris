@@ -9,14 +9,16 @@ const root = await readFile(new URL('../dist/index.html', import.meta.url), 'utf
 test('publica as duas localizações com idioma correto', () => {
   assert.match(pt, /<html lang="pt-BR"/);
   assert.match(en, /<html lang="en"/);
-  assert.match(pt, /curl -fsSL https:\/\/camtacte\.vercel\.app\/install\.sh \| sh/);
-  assert.match(root, /camtacte-locale/);
+  assert.match(pt, /curl -fsSL https:\/\/valkyris\.vercel\.app\/install\.sh \| sh/);
+  assert.match(root, /valkyris-locale/);
 });
 
 test('controles e navegação possuem nomes acessíveis', () => {
   assert.match(pt, /aria-label="[^"]+"/);
   assert.match(pt, /href="\/en"/);
   assert.match(en, /href="\/pt-BR"/);
+  assert.match(pt, /aria-controls="site-navigation"/);
+  assert.match(pt, /valkyris-mark\.png/);
 });
 
 test('respeita a preferência por movimento reduzido', async () => {
@@ -24,6 +26,7 @@ test('respeita a preferência por movimento reduzido', async () => {
   const files = (await readdir(assets)).filter((file) => file.endsWith('.css'));
   const styles = (await Promise.all(files.map((file) => readFile(new URL(file, assets), 'utf8')))).join('\n');
   assert.match(styles, /prefers-reduced-motion:reduce/);
+  assert.match(styles, /\.phone-stage\{height:auto;display:grid/);
 });
 
 test('artefatos públicos acompanham a documentação', async () => {

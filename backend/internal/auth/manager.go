@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	appcrypto "github.com/ferforastieri/camtacte/backend/internal/crypto"
-	"github.com/ferforastieri/camtacte/backend/internal/store"
+	appcrypto "github.com/ferforastieri/valkyris/backend/internal/crypto"
+	"github.com/ferforastieri/valkyris/backend/internal/store"
 	"github.com/google/uuid"
 )
 
@@ -56,7 +56,7 @@ func (m *Manager) CreatePairing(ctx context.Context, publicURL, fingerprint stri
 	code := strings.ToUpper(codeRaw[:8])
 	now := time.Now().UTC()
 	values := url.Values{"url": {publicURL}, "code": {code}, "fingerprint": {fingerprint}}
-	session := PairingSession{ID: uuid.NewString(), Code: code, PublicURL: publicURL, Fingerprint: fingerprint, URI: "camtacte://pair?" + values.Encode(), ExpiresAt: now.Add(m.lifetime)}
+	session := PairingSession{ID: uuid.NewString(), Code: code, PublicURL: publicURL, Fingerprint: fingerprint, URI: "valkyris://pair?" + values.Encode(), ExpiresAt: now.Add(m.lifetime)}
 	_, err = m.store.DB.ExecContext(ctx, `INSERT INTO pairing_sessions(id,code_hash,expires_at,created_at) VALUES(?,?,?,?)`, session.ID, appcrypto.Hash(code), session.ExpiresAt.Format(time.RFC3339Nano), now.Format(time.RFC3339Nano))
 	return session, err
 }

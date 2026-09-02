@@ -13,6 +13,6 @@ dependencyResolutionManagement {
         maven("https://maven.unifiedpush.org")
     }
 }
-rootProject.name = "Camtacte"
+rootProject.name = "Valkyris"
 include(":app")
 

@@ -9,7 +9,7 @@
 data/
 dist/
 coverage/
-backend/camtacte
+backend/valkyris
 backend/models/*.onnx
 backend/models/class_labels_indices.csv
 mobile/.gradle/

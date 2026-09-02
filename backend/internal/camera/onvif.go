@@ -125,7 +125,7 @@ func (c *ONVIFClient) SnapshotURI(ctx context.Context, cam Camera, cred Credenti
 
 // MonitorEvents maintains a renewable ONVIF PullPoint subscription. Returning
 // errors are retried with bounded backoff so a camera reboot does not require
-// restarting Camtacte.
+// restarting Valkyris.
 func (c *ONVIFClient) MonitorEvents(ctx context.Context, cam Camera, cred Credentials, emit func(string, float64)) {
 	backoff := time.Second
 	for ctx.Err() == nil {

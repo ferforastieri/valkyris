@@ -18,13 +18,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ferforastieri/camtacte/backend/internal/auth"
-	"github.com/ferforastieri/camtacte/backend/internal/camera"
-	"github.com/ferforastieri/camtacte/backend/internal/detector"
-	"github.com/ferforastieri/camtacte/backend/internal/event"
-	"github.com/ferforastieri/camtacte/backend/internal/media"
-	"github.com/ferforastieri/camtacte/backend/internal/notify"
-	"github.com/ferforastieri/camtacte/backend/internal/rules"
+	"github.com/ferforastieri/valkyris/backend/internal/auth"
+	"github.com/ferforastieri/valkyris/backend/internal/camera"
+	"github.com/ferforastieri/valkyris/backend/internal/detector"
+	"github.com/ferforastieri/valkyris/backend/internal/event"
+	"github.com/ferforastieri/valkyris/backend/internal/media"
+	"github.com/ferforastieri/valkyris/backend/internal/notify"
+	"github.com/ferforastieri/valkyris/backend/internal/rules"
 )
 
 //go:embed openapi.yaml
@@ -88,7 +88,7 @@ func (s *Server) Handler() http.Handler {
 	return requestLog(s.logger, securityHeaders(mux))
 }
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, 200, map[string]any{"status": "ok", "service": "camtacte", "time": time.Now().UTC()})
+	writeJSON(w, 200, map[string]any{"status": "ok", "service": "valkyris", "time": time.Now().UTC()})
 }
 func (s *Server) openapi(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/yaml")

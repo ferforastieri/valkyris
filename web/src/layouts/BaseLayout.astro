@@ -18,12 +18,12 @@ const { locale, title, description } = Astro.props;
     <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
     <link rel="alternate" hreflang="pt-BR" href={new URL('/pt-BR', Astro.site)} />
     <link rel="alternate" hreflang="en" href={new URL('/en', Astro.site)} />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/valkyris-mark.png" type="image/png" />
     <title>{title}</title>
     <script is:inline>
-      const saved = localStorage.getItem('camtacte-theme');
+      const saved = localStorage.getItem('valkyris-theme');
       if (saved) document.documentElement.dataset.theme = saved;
-      localStorage.setItem('camtacte-locale', document.documentElement.lang);
+      localStorage.setItem('valkyris-locale', document.documentElement.lang);
     </script>
   </head>
   <body><slot /></body>

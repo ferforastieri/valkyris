@@ -28,7 +28,7 @@ jobs:
       - name: Testes
         run: go test -race -coverprofile=coverage.out ./...
       - name: Compilação
-        run: CGO_ENABLED=1 go build -trimpath ./cmd/camtacte
+        run: CGO_ENABLED=1 go build -trimpath ./cmd/valkyris
 
   web:
     name: Web · Astro
@@ -64,7 +64,7 @@ jobs:
         run: ./gradlew --stacktrace lintDebug testDebugUnitTest assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: camtacte-debug
+          name: valkyris-debug
           path: mobile/app/build/outputs/apk/debug/app-debug.apk
 
   container:
@@ -81,21 +81,21 @@ jobs:
           platforms: linux/amd64
           push: false
           load: true
-          tags: camtacte:ci
+          tags: valkyris:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Validar Compose
         run: docker compose config --quiet
       - name: Smoke test HTTPS
         run: |
-          docker run -d --rm --name camtacte-ci -p 127.0.0.1:18443:8443 camtacte:ci
+          docker run -d --rm --name valkyris-ci -p 127.0.0.1:18443:8443 valkyris:ci
           for attempt in $(seq 1 20); do
             if curl -kfsS https://127.0.0.1:18443/health | grep -q '"status":"ok"'; then
-              docker stop camtacte-ci
+              docker stop valkyris-ci
               exit 0
             fi
             sleep 1
           done
-          docker logs camtacte-ci
-          docker stop camtacte-ci
+          docker logs valkyris-ci
+          docker stop valkyris-ci
           exit 1

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ferforastieri/camtacte/backend/internal/store"
+	"github.com/ferforastieri/valkyris/backend/internal/store"
 )
 
 func TestPairingIsOneTimeAndTokenAuthenticates(t *testing.T) {
@@ -22,7 +22,7 @@ func TestPairingIsOneTimeAndTokenAuthenticates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.HasPrefix(session.URI, "camtacte://pair?") || !strings.Contains(session.URI, "fingerprint=AA%3ABB") {
+	if !strings.HasPrefix(session.URI, "valkyris://pair?") || !strings.Contains(session.URI, "fingerprint=AA%3ABB") {
 		t.Fatalf("unexpected pairing URI: %s", session.URI)
 	}
 	paired, err := manager.Pair(context.Background(), PairRequest{Code: strings.ToLower(session.Code), DeviceName: "Pixel", Locale: "en"})

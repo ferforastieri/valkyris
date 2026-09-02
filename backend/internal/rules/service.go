@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ferforastieri/camtacte/backend/internal/store"
+	"github.com/ferforastieri/valkyris/backend/internal/store"
 	"github.com/google/uuid"
 )
 

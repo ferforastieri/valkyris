@@ -6,7 +6,7 @@ test:
 	cd mobile && ./gradlew lintDebug testDebugUnitTest
 
 build:
-	cd backend && CGO_ENABLED=1 go build -o camtacte ./cmd/camtacte
+	cd backend && CGO_ENABLED=1 go build -o valkyris ./cmd/valkyris
 
 web:
 	cd web && pnpm build

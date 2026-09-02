@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ferforastieri/camtacte/backend/internal/auth"
-	"github.com/ferforastieri/camtacte/backend/internal/store"
+	"github.com/ferforastieri/valkyris/backend/internal/auth"
+	"github.com/ferforastieri/valkyris/backend/internal/store"
 )
 
 func TestSetupPageCreatesScannableOneTimePairing(t *testing.T) {
@@ -42,7 +42,7 @@ func TestSetupPageCreatesScannableOneTimePairing(t *testing.T) {
 		t.Fatal("setup page must remain fresh and uncached")
 	}
 
-	match := regexp.MustCompile(`href="(camtacte://pair\?[^"]+)"`).FindStringSubmatch(page.Body.String())
+	match := regexp.MustCompile(`href="(valkyris://pair\?[^"]+)"`).FindStringSubmatch(page.Body.String())
 	if len(match) != 2 {
 		t.Fatal("setup page did not contain an app pairing link")
 	}
@@ -71,7 +71,7 @@ func TestSetupPageRequiresLocalSetupSecret(t *testing.T) {
 func TestTerminalQRCodeUsesSetupHeader(t *testing.T) {
 	server, _ := setupTestServer(t)
 	request := httptest.NewRequest(http.MethodGet, "/setup/terminal", nil)
-	request.Header.Set("X-Camtacte-Setup-Key", "local-secret")
+	request.Header.Set("X-Valkyris-Setup-Key", "local-secret")
 	response := httptest.NewRecorder()
 	server.Handler().ServeHTTP(response, request)
 	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "\x1b[40m") || !strings.Contains(response.Body.String(), "\x1b[47m") {
@@ -81,7 +81,7 @@ func TestTerminalQRCodeUsesSetupHeader(t *testing.T) {
 
 func setupTestServer(t *testing.T) (*Server, *auth.Manager) {
 	t.Helper()
-	db, err := store.Open(filepath.Join(t.TempDir(), "camtacte.db"))
+	db, err := store.Open(filepath.Join(t.TempDir(), "valkyris.db"))
 	if err != nil {
 		t.Fatal(err)
 	}

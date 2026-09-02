@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ferforastieri/camtacte/backend/internal/camera"
-	"github.com/ferforastieri/camtacte/backend/internal/media"
-	"github.com/ferforastieri/camtacte/backend/internal/rules"
+	"github.com/ferforastieri/valkyris/backend/internal/camera"
+	"github.com/ferforastieri/valkyris/backend/internal/media"
+	"github.com/ferforastieri/valkyris/backend/internal/rules"
 )
 
 type CameraLister interface {

@@ -1,10 +1,10 @@
 #!/bin/sh
 set -eu
 
-REPOSITORY="ferforastieri/camtacte"
-REQUESTED_VERSION="${CAMTACTE_VERSION:-latest}"
-INSTALL_ROOT="${CAMTACTE_HOME:-${XDG_DATA_HOME:-${HOME}/.local/share}/camtacte}"
-TEMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/camtacte.XXXXXX")"
+REPOSITORY="ferforastieri/valkyris"
+REQUESTED_VERSION="${VALKYRIS_VERSION:-latest}"
+INSTALL_ROOT="${VALKYRIS_HOME:-${XDG_DATA_HOME:-${HOME}/.local/share}/valkyris}"
+TEMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/valkyris.XXXXXX")"
 
 cleanup() {
   rm -rf -- "$TEMP_ROOT"
@@ -12,7 +12,7 @@ cleanup() {
 trap cleanup EXIT HUP INT TERM
 
 fail() {
-  printf 'Camtacte: %s\n' "$1" >&2
+  printf 'Valkyris: %s\n' "$1" >&2
   exit 1
 }
 
@@ -27,7 +27,7 @@ else
   RELEASE_URL="https://github.com/${REPOSITORY}/releases/download/${REQUESTED_VERSION}"
 fi
 
-printf 'Camtacte: baixando a release %s...\n' "$REQUESTED_VERSION"
+printf 'Valkyris: baixando a release %s...\n' "$REQUESTED_VERSION"
 for asset in compose.yaml mediamtx.yml VERSION SHA256SUMS; do
   curl -fsSL --retry 3 --proto '=https' --tlsv1.2 \
     "${RELEASE_URL}/${asset}" -o "${TEMP_ROOT}/${asset}" || fail "não foi possível baixar ${asset}."
@@ -65,31 +65,31 @@ ENV_FILE="${INSTALL_ROOT}/.env"
 NEW_SETUP_TOKEN="$(od -An -N24 -tx1 /dev/urandom | tr -d ' \n')"
 if [ ! -f "$ENV_FILE" ]; then
   {
-    printf 'CAMTACTE_VERSION=%s\n' "$RELEASE_VERSION"
-    printf 'CAMTACTE_PORT=8443\n'
-    printf 'CAMTACTE_PUBLIC_URL=https://%s:8443\n' "$LAN_ADDRESS"
-    printf 'CAMTACTE_SETUP_TOKEN=%s\n' "$NEW_SETUP_TOKEN"
+    printf 'VALKYRIS_VERSION=%s\n' "$RELEASE_VERSION"
+    printf 'VALKYRIS_PORT=8443\n'
+    printf 'VALKYRIS_PUBLIC_URL=https://%s:8443\n' "$LAN_ADDRESS"
+    printf 'VALKYRIS_SETUP_TOKEN=%s\n' "$NEW_SETUP_TOKEN"
   } > "$ENV_FILE"
 else
-  if grep -q '^CAMTACTE_VERSION=' "$ENV_FILE"; then
-    sed "s/^CAMTACTE_VERSION=.*/CAMTACTE_VERSION=${RELEASE_VERSION}/" "$ENV_FILE" > "${TEMP_ROOT}/env"
+  if grep -q '^VALKYRIS_VERSION=' "$ENV_FILE"; then
+    sed "s/^VALKYRIS_VERSION=.*/VALKYRIS_VERSION=${RELEASE_VERSION}/" "$ENV_FILE" > "${TEMP_ROOT}/env"
     mv "${TEMP_ROOT}/env" "$ENV_FILE"
   else
-    printf '\nCAMTACTE_VERSION=%s\n' "$RELEASE_VERSION" >> "$ENV_FILE"
+    printf '\nVALKYRIS_VERSION=%s\n' "$RELEASE_VERSION" >> "$ENV_FILE"
   fi
-  if ! grep -q '^CAMTACTE_SETUP_TOKEN=' "$ENV_FILE"; then
-    printf 'CAMTACTE_SETUP_TOKEN=%s\n' "$NEW_SETUP_TOKEN" >> "$ENV_FILE"
+  if ! grep -q '^VALKYRIS_SETUP_TOKEN=' "$ENV_FILE"; then
+    printf 'VALKYRIS_SETUP_TOKEN=%s\n' "$NEW_SETUP_TOKEN" >> "$ENV_FILE"
   fi
 fi
 chmod 600 "$ENV_FILE"
 
-printf 'Camtacte: iniciando os serviços em %s...\n' "$INSTALL_ROOT"
+printf 'Valkyris: iniciando os serviços em %s...\n' "$INSTALL_ROOT"
 docker compose --project-directory "$INSTALL_ROOT" --env-file "$ENV_FILE" pull
 docker compose --project-directory "$INSTALL_ROOT" --env-file "$ENV_FILE" up -d --remove-orphans
 
-SETUP_TOKEN="$(awk -F= '$1 == "CAMTACTE_SETUP_TOKEN" { print substr($0, index($0, "=") + 1); exit }' "$ENV_FILE")"
-PUBLIC_URL="$(awk -F= '$1 == "CAMTACTE_PUBLIC_URL" { print substr($0, index($0, "=") + 1); exit }' "$ENV_FILE")"
-PORT="$(awk -F= '$1 == "CAMTACTE_PORT" { print substr($0, index($0, "=") + 1); exit }' "$ENV_FILE")"
+SETUP_TOKEN="$(awk -F= '$1 == "VALKYRIS_SETUP_TOKEN" { print substr($0, index($0, "=") + 1); exit }' "$ENV_FILE")"
+PUBLIC_URL="$(awk -F= '$1 == "VALKYRIS_PUBLIC_URL" { print substr($0, index($0, "=") + 1); exit }' "$ENV_FILE")"
+PORT="$(awk -F= '$1 == "VALKYRIS_PORT" { print substr($0, index($0, "=") + 1); exit }' "$ENV_FILE")"
 [ -n "$PORT" ] || PORT=8443
 [ -n "$PUBLIC_URL" ] || PUBLIC_URL="https://${LAN_ADDRESS}:${PORT}"
 
@@ -101,7 +101,7 @@ for attempt in $(seq 1 30); do
   sleep 1
 done
 
-printf '\nCamtacte %s está pronto. Escaneie com o app:\n\n' "$RELEASE_VERSION"
-curl -kfsS --max-time 10 -H "X-Camtacte-Setup-Key: ${SETUP_TOKEN}" \
+printf '\nValkyris %s está pronto. Escaneie com o app:\n\n' "$RELEASE_VERSION"
+curl -kfsS --max-time 10 -H "X-Valkyris-Setup-Key: ${SETUP_TOKEN}" \
   "https://127.0.0.1:${PORT}/setup/terminal" || fail "não foi possível gerar o QR code."
 printf '\nOu abra esta página na sua rede local:\n%s/setup?key=%s\n' "$PUBLIC_URL" "$SETUP_TOKEN"

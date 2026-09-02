@@ -1,11 +1,11 @@
 <resources>
-    <style name="Theme.Camtacte" parent="android:style/Theme.Material.NoActionBar">
+    <style name="Theme.Valkyris" parent="android:style/Theme.Material.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:statusBarColor">#101310</item>
         <item name="android:navigationBarColor">#101310</item>
     </style>
-    <style name="Theme.Camtacte.Alarm" parent="Theme.Camtacte">
+    <style name="Theme.Valkyris.Alarm" parent="Theme.Valkyris">
         <item name="android:windowFullscreen">true</item>
     </style>
 </resources>

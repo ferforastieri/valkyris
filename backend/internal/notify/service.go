@@ -15,9 +15,9 @@ import (
 	"net/http"
 	"time"
 
-	appcrypto "github.com/ferforastieri/camtacte/backend/internal/crypto"
-	"github.com/ferforastieri/camtacte/backend/internal/event"
-	"github.com/ferforastieri/camtacte/backend/internal/store"
+	appcrypto "github.com/ferforastieri/valkyris/backend/internal/crypto"
+	"github.com/ferforastieri/valkyris/backend/internal/event"
+	"github.com/ferforastieri/valkyris/backend/internal/store"
 	"github.com/google/uuid"
 )
 

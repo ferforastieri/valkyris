@@ -1,4 +1,4 @@
-module github.com/ferforastieri/camtacte/backend
+module github.com/ferforastieri/valkyris/backend
 
 go 1.26.0
 

@@ -1,10 +1,10 @@
 openapi: 3.1.0
 info:
-  title: Camtacte API
+  title: Valkyris API
   version: 1.0.0
   description: Local-first home camera monitoring API.
 servers:
-  - url: https://camtacte.local:8443/api/v1
+  - url: https://valkyris.local:8443/api/v1
 security:
   - bearerAuth: []
 paths:

@@ -9,12 +9,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ferforastieri/camtacte/backend/internal/api"
-	"github.com/ferforastieri/camtacte/backend/internal/camera"
-	"github.com/ferforastieri/camtacte/backend/internal/event"
-	"github.com/ferforastieri/camtacte/backend/internal/media"
-	"github.com/ferforastieri/camtacte/backend/internal/notify"
-	"github.com/ferforastieri/camtacte/backend/internal/rules"
+	"github.com/ferforastieri/valkyris/backend/internal/api"
+	"github.com/ferforastieri/valkyris/backend/internal/camera"
+	"github.com/ferforastieri/valkyris/backend/internal/event"
+	"github.com/ferforastieri/valkyris/backend/internal/media"
+	"github.com/ferforastieri/valkyris/backend/internal/notify"
+	"github.com/ferforastieri/valkyris/backend/internal/rules"
 )
 
 type Service struct {
