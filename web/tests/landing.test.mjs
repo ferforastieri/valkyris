@@ -22,8 +22,8 @@ test('controles e navegação possuem nomes acessíveis', () => {
   assert.doesNotMatch(pt, /<footer[\s>]/);
   assert.match(pt, /© 2026 · MIT/);
   assert.match(pt, /valkyris-mark\.png/);
-  assert.match(pt, /href="\/favicon\.png"/);
-  assert.match(pt, /href="\/apple-touch-icon\.png"/);
+  assert.match(pt, /href="\/favicon\.png\?v=2"/);
+  assert.match(pt, /href="\/apple-touch-icon\.png\?v=2"/);
 });
 
 test('respeita a preferência por movimento reduzido', async () => {
@@ -33,6 +33,9 @@ test('respeita a preferência por movimento reduzido', async () => {
   assert.match(styles, /prefers-reduced-motion:reduce/);
   assert.match(styles, /\.phone-stage\{height:auto;display:grid/);
   assert.match(styles, /\.floating-dock\{position:fixed/);
+  assert.match(styles, /\.floating-dock\{[^}]*top:18px;bottom:auto/);
+  assert.match(styles, /@media\(max-width:760px\)[^{]*\{[^}]*body\{padding-top:0;padding-bottom:76px\}/);
+  assert.match(styles, /\.dock-link span\{display:none\}/);
 });
 
 test('artefatos públicos acompanham a documentação', async () => {

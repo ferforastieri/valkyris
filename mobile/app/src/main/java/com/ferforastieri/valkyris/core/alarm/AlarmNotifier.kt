@@ -1,7 +1,10 @@
 package com.ferforastieri.valkyris.core.alarm
 
 import android.Manifest
-import android.app.*
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -17,28 +20,63 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-@Singleton class AlarmNotifier @Inject constructor(@param:ApplicationContext private val context:Context){
-    fun createChannels(){val manager=context.getSystemService(NotificationManager::class.java);val sound=RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);manager.createNotificationChannel(NotificationChannel(EVENTS,context.getString(R.string.notification_channel_events),NotificationManager.IMPORTANCE_HIGH).apply{enableVibration(true)});manager.createNotificationChannel(NotificationChannel(ALARMS,context.getString(R.string.notification_channel_alarm),NotificationManager.IMPORTANCE_HIGH).apply{enableVibration(true);setSound(sound,AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build());lockscreenVisibility=Notification.VISIBILITY_PUBLIC})}
-    fun show(eventId:String,type:String,confidence:Double,alarm:Boolean){
-        if(Build.VERSION.SDK_INT>=33&&ContextCompat.checkSelfPermission(context,Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)return
-        val open=PendingIntent.getActivity(context,eventId.hashCode(),Intent(context,MainActivity::class.java).putExtra("eventId",eventId),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val alarmIntent=PendingIntent.getActivity(context,eventId.hashCode()+1,Intent(context,AlarmActivity::class.java).putExtra("eventId",eventId).putExtra("eventType",type),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val manager=context.getSystemService(NotificationManager::class.java)
-        val canUseFullScreen=!alarm||Build.VERSION.SDK_INT<34||manager.canUseFullScreenIntent()
-        val notification=NotificationCompat.Builder(context,if(alarm)ALARMS else EVENTS)
+@Singleton
+class AlarmNotifier @Inject constructor(@param:ApplicationContext private val context: Context) {
+    fun createChannels() {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        val sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+        manager.createNotificationChannel(
+            NotificationChannel(EVENTS, context.getString(R.string.notification_channel_events), NotificationManager.IMPORTANCE_HIGH).apply {
+                enableVibration(true)
+            },
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(ALARMS, context.getString(R.string.notification_channel_alarm), NotificationManager.IMPORTANCE_HIGH).apply {
+                enableVibration(true)
+                setSound(sound, AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build())
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                setBypassDnd(manager.isNotificationPolicyAccessGranted)
+            },
+        )
+    }
+
+    fun show(eventId: String, type: String, confidence: Double, alarm: Boolean) {
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+        val open = PendingIntent.getActivity(
+            context,
+            eventId.hashCode(),
+            Intent(context, MainActivity::class.java).putExtra("eventId", eventId),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val alarmIntent = PendingIntent.getActivity(
+            context,
+            eventId.hashCode() + 1,
+            Intent(context, AlarmActivity::class.java).putExtra("eventId", eventId).putExtra("eventType", type),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val manager = context.getSystemService(NotificationManager::class.java)
+        val canUseFullScreen = !alarm || Build.VERSION.SDK_INT < 34 || manager.canUseFullScreenIntent()
+        val notification = NotificationCompat.Builder(context, if (alarm) ALARMS else EVENTS)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(type.replace('_',' ').replaceFirstChar{it.uppercase()})
-            .setContentText("${(confidence*100).toInt()}% · Valkyris")
+            .setContentTitle(type.replace('_', ' ').replaceFirstChar { it.uppercase() })
+            .setContentText("${(confidence * 100).toInt()}% · Valkyris")
             .setContentIntent(open)
             .setOngoing(true)
             .setAutoCancel(false)
             .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(if(alarm)NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_EVENT)
-            .addAction(0,context.getString(R.string.acknowledge),alarmIntent)
-            .apply{if(alarm&&canUseFullScreen)setFullScreenIntent(alarmIntent,true)}
+            .setCategory(if (alarm) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_EVENT)
+            .addAction(0, context.getString(R.string.acknowledge), alarmIntent)
+            .apply { if (alarm && canUseFullScreen) setFullScreenIntent(alarmIntent, true) }
             .build()
-        NotificationManagerCompat.from(context).notify(eventId.hashCode(),notification)
+        NotificationManagerCompat.from(context).notify(eventId.hashCode(), notification)
     }
-    fun cancel(eventId:String){NotificationManagerCompat.from(context).cancel(eventId.hashCode())}
-    companion object{const val EVENTS="valkyris_events";const val ALARMS="valkyris_alarms"}
+
+    fun cancel(eventId: String) {
+        NotificationManagerCompat.from(context).cancel(eventId.hashCode())
+    }
+
+    companion object {
+        const val EVENTS = "valkyris_events"
+        const val ALARMS = "valkyris_alarms"
+    }
 }

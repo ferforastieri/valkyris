@@ -27,9 +27,9 @@
   .compat-card,.principle-grid article{border-radius:20px}.compat-card{padding:24px}.capability-list{margin-top:24px}
 }
 
-/* A única navegação da landing é uma dock flutuante, compacta e sempre acessível. */
-body{padding-bottom:112px}
-.floating-dock{position:fixed;z-index:50;left:50%;bottom:18px;transform:translateX(-50%);width:min(1180px,calc(100% - 32px));min-height:68px;padding:8px;display:flex;align-items:center;gap:10px;border:1px solid color-mix(in srgb,var(--line) 88%,transparent);border-radius:22px;background:color-mix(in srgb,var(--surface) 88%,transparent);box-shadow:0 18px 45px rgba(20,25,20,.16),inset 0 1px 0 color-mix(in srgb,var(--surface) 90%,transparent);backdrop-filter:blur(22px) saturate(145%)}
+/* Uma única dock: topo no desktop e rodapé compacto no mobile. */
+body{padding-top:104px}
+.floating-dock{position:fixed;z-index:50;left:50%;top:18px;bottom:auto;transform:translateX(-50%);width:min(1180px,calc(100% - 32px));min-height:68px;padding:8px;display:flex;align-items:center;gap:10px;border:1px solid color-mix(in srgb,var(--line) 88%,transparent);border-radius:22px;background:color-mix(in srgb,var(--surface) 88%,transparent);box-shadow:0 18px 45px rgba(20,25,20,.16),inset 0 1px 0 color-mix(in srgb,var(--surface) 90%,transparent);backdrop-filter:blur(22px) saturate(145%)}
 .dock-brand{display:flex;align-items:center;gap:10px;padding-right:11px;border-right:1px solid var(--line);flex:0 0 auto}
 .dock-identity{display:flex;flex-direction:column;line-height:1.15}.dock-identity strong{font:650 1rem var(--display);letter-spacing:-.035em}.dock-identity small{margin-top:4px;color:var(--muted);font:400 .55rem var(--mono)}
 .dock-links{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;min-width:0;flex:1}
@@ -38,10 +38,10 @@ body{padding-bottom:112px}
 .dock-actions{display:flex;align-items:center;gap:5px;padding-left:2px}.dock-actions .icon-button{background:color-mix(in srgb,var(--surface-soft) 82%,transparent)}
 
 @media(max-width:760px){
-  body{padding-bottom:154px}
-  .floating-dock{bottom:8px;width:calc(100% - 16px);min-height:0;padding:8px;display:grid;grid-template-columns:1fr auto;gap:7px;border-radius:22px}
-  .dock-brand{border-right:0;padding:0;min-width:0}.dock-brand .brand-mark{width:38px;height:38px}.dock-identity strong{font-size:.92rem}.dock-identity small{font-size:.5rem}
-  .dock-actions{justify-self:end}.dock-actions .icon-button{width:38px;height:38px}
-  .dock-links{grid-column:1/-1;grid-row:2;width:100%;gap:3px;padding-top:7px;border-top:1px solid var(--line)}
-  .dock-link{min-height:48px;padding:4px 2px;flex-direction:column;gap:3px;border-radius:12px;font-size:clamp(.56rem,2.5vw,.67rem);line-height:1.1;overflow:hidden;text-overflow:ellipsis}.dock-link span{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+  body{padding-top:0;padding-bottom:76px}
+  .floating-dock{top:auto;bottom:8px;width:calc(100% - 16px);min-height:56px;padding:6px;display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:4px;border-radius:19px}
+  .dock-brand{border-right:0;padding:0;min-width:0}.dock-brand .brand-mark{width:36px;height:36px;border-radius:11px}.dock-brand .brand-mark img{width:34px;height:34px}.dock-identity{display:none}
+  .dock-links{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;width:100%}
+  .dock-link{min-width:0;min-height:42px;padding:0;gap:0;border-radius:11px}.dock-link span{display:none}.dock-link svg{width:19px;height:19px}
+  .dock-actions{justify-self:end;gap:2px;padding:0}.dock-actions .icon-button{width:36px;height:42px;border:0;background:transparent;box-shadow:none}.dock-actions .icon-button svg{width:18px;height:18px}
 }

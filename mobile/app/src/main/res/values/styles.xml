@@ -5,8 +5,13 @@
         <item name="android:statusBarColor">#E8E9E5</item>
         <item name="android:navigationBarColor">#E8E9E5</item>
     </style>
+    <style name="Theme.Valkyris.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/valkyris_canvas</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/valkyris_mark</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/valkyris_surface</item>
+        <item name="postSplashScreenTheme">@style/Theme.Valkyris</item>
+    </style>
     <style name="Theme.Valkyris.Alarm" parent="Theme.Valkyris">
         <item name="android:windowFullscreen">true</item>
     </style>
 </resources>
-
