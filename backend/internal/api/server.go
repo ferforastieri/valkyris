@@ -46,17 +46,21 @@ type Server struct {
 	logger      *slog.Logger
 	publicURL   string
 	fingerprint string
+	setupToken  string
 }
 
 func NewServer(a *auth.Manager, c *camera.Repository, o *camera.ONVIFClient, m *media.Manager, r *rules.Service, e *event.Service, n *notify.Service, h *Hub, logger *slog.Logger) *Server {
 	return &Server{auth: a, cameras: c, onvif: o, media: m, rules: r, events: e, notify: n, hub: h, logger: logger}
 }
 func (s *Server) SetSubmitter(sub DetectionSubmitter) { s.submitter = sub }
-func (s *Server) SetPairingIdentity(publicURL, fingerprint string) {
-	s.publicURL, s.fingerprint = publicURL, fingerprint
+func (s *Server) SetPairingIdentity(publicURL, fingerprint, setupToken string) {
+	s.publicURL, s.fingerprint, s.setupToken = publicURL, fingerprint, setupToken
 }
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /{$}", s.setupRoot)
+	mux.HandleFunc("GET /setup", s.setupPage)
+	mux.HandleFunc("GET /setup/terminal", s.setupTerminal)
 	mux.HandleFunc("GET /health", s.health)
 	mux.HandleFunc("GET /openapi.yaml", s.openapi)
 	mux.HandleFunc("POST /api/v1/pair", s.pair)

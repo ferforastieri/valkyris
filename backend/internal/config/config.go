@@ -22,6 +22,7 @@ type Config struct {
 	RetentionAge    time.Duration
 	RetentionBytes  int64
 	PairingLifetime time.Duration
+	SetupToken      string
 }
 
 func Load() Config {
@@ -41,6 +42,7 @@ func Load() Config {
 		RetentionAge:    7 * 24 * time.Hour,
 		RetentionBytes:  5 * 1024 * 1024 * 1024,
 		PairingLifetime: 10 * time.Minute,
+		SetupToken:      os.Getenv("CAMTACTE_SETUP_TOKEN"),
 	}
 }
 

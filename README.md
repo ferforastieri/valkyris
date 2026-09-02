@@ -31,9 +31,12 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Open `https://localhost:8443/health`. The first-run pairing code is printed once
-to the backend logs. Keep the camera and ports 554/2020 private; use a VPN for
-remote access.
+At the end of the installation, the terminal displays a QR code and a private
+local setup URL. Open the Android app, tap **Scan QR code**, and point it at the
+terminal or at the setup page. The page is served directly by the Go backend;
+it does not depend on the Vercel landing page. Pairing codes are one-time and
+expire after ten minutes, while the setup page automatically creates fresh
+ones. Keep the camera and ports 554/2020 private; use a VPN for remote access.
 
 ## Repository
 

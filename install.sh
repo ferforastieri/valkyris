@@ -62,11 +62,13 @@ done
 LAN_ADDRESS="$(hostname -I 2>/dev/null | awk '{ print $1 }')"
 [ -n "$LAN_ADDRESS" ] || LAN_ADDRESS="localhost"
 ENV_FILE="${INSTALL_ROOT}/.env"
+NEW_SETUP_TOKEN="$(od -An -N24 -tx1 /dev/urandom | tr -d ' \n')"
 if [ ! -f "$ENV_FILE" ]; then
   {
     printf 'CAMTACTE_VERSION=%s\n' "$RELEASE_VERSION"
     printf 'CAMTACTE_PORT=8443\n'
     printf 'CAMTACTE_PUBLIC_URL=https://%s:8443\n' "$LAN_ADDRESS"
+    printf 'CAMTACTE_SETUP_TOKEN=%s\n' "$NEW_SETUP_TOKEN"
   } > "$ENV_FILE"
 else
   if grep -q '^CAMTACTE_VERSION=' "$ENV_FILE"; then
@@ -75,6 +77,9 @@ else
   else
     printf '\nCAMTACTE_VERSION=%s\n' "$RELEASE_VERSION" >> "$ENV_FILE"
   fi
+  if ! grep -q '^CAMTACTE_SETUP_TOKEN=' "$ENV_FILE"; then
+    printf 'CAMTACTE_SETUP_TOKEN=%s\n' "$NEW_SETUP_TOKEN" >> "$ENV_FILE"
+  fi
 fi
 chmod 600 "$ENV_FILE"
 
@@ -82,5 +87,21 @@ printf 'Camtacte: iniciando os serviços em %s...\n' "$INSTALL_ROOT"
 docker compose --project-directory "$INSTALL_ROOT" --env-file "$ENV_FILE" pull
 docker compose --project-directory "$INSTALL_ROOT" --env-file "$ENV_FILE" up -d --remove-orphans
 
-printf '\nCamtacte %s está em https://%s:8443\n' "$RELEASE_VERSION" "$LAN_ADDRESS"
-printf 'Veja o código de pareamento com:\n  docker compose --project-directory %s logs camtacte\n' "$INSTALL_ROOT"
+SETUP_TOKEN="$(awk -F= '$1 == "CAMTACTE_SETUP_TOKEN" { print substr($0, index($0, "=") + 1); exit }' "$ENV_FILE")"
+PUBLIC_URL="$(awk -F= '$1 == "CAMTACTE_PUBLIC_URL" { print substr($0, index($0, "=") + 1); exit }' "$ENV_FILE")"
+PORT="$(awk -F= '$1 == "CAMTACTE_PORT" { print substr($0, index($0, "=") + 1); exit }' "$ENV_FILE")"
+[ -n "$PORT" ] || PORT=8443
+[ -n "$PUBLIC_URL" ] || PUBLIC_URL="https://${LAN_ADDRESS}:${PORT}"
+
+for attempt in $(seq 1 30); do
+  if curl -kfsS --max-time 2 "https://127.0.0.1:${PORT}/health" >/dev/null 2>&1; then
+    break
+  fi
+  [ "$attempt" -lt 30 ] || fail "os serviços iniciaram, mas o backend não respondeu a tempo."
+  sleep 1
+done
+
+printf '\nCamtacte %s está pronto. Escaneie com o app:\n\n' "$RELEASE_VERSION"
+curl -kfsS --max-time 10 -H "X-Camtacte-Setup-Key: ${SETUP_TOKEN}" \
+  "https://127.0.0.1:${PORT}/setup/terminal" || fail "não foi possível gerar o QR code."
+printf '\nOu abra esta página na sua rede local:\n%s/setup?key=%s\n' "$PUBLIC_URL" "$SETUP_TOKEN"

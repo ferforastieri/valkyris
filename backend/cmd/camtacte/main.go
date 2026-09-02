@@ -72,7 +72,7 @@ func main() {
 	application := &app.Service{Rules: rulesService, Events: eventService, Cameras: cameraRepo, Media: mediaManager, Notify: notifyService, Hub: hub, DataDir: cfg.DataDir, Logger: logger}
 	apiServer := api.NewServer(authManager, cameraRepo, onvif, mediaManager, rulesService, eventService, notifyService, hub, logger)
 	apiServer.SetSubmitter(application)
-	apiServer.SetPairingIdentity(cfg.PublicURL, fingerprint)
+	apiServer.SetPairingIdentity(cfg.PublicURL, fingerprint, cfg.SetupToken)
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 	go notifyService.Run(ctx)
@@ -96,13 +96,8 @@ func main() {
 		return err
 	}}
 	go monitor.Run(ctx)
-	var deviceCount int
-	_ = db.DB.QueryRowContext(ctx, `SELECT COUNT(*) FROM devices`).Scan(&deviceCount)
-	if deviceCount == 0 {
-		session, e := authManager.CreatePairing(ctx, cfg.PublicURL, fingerprint)
-		if e == nil {
-			logger.Warn("first-run pairing code", "code", session.Code, "expires_at", session.ExpiresAt, "url", cfg.PublicURL, "fingerprint", fingerprint)
-		}
+	if cfg.SetupToken == "" {
+		logger.Warn("local setup page disabled", "reason", "CAMTACTE_SETUP_TOKEN is not configured")
 	}
 	httpServer := &http.Server{Addr: cfg.Listen, Handler: apiServer.Handler(), ReadHeaderTimeout: 10 * time.Second, ReadTimeout: 30 * time.Second, WriteTimeout: 60 * time.Second, IdleTimeout: 2 * time.Minute}
 	go func() {

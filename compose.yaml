@@ -18,6 +18,7 @@ services:
       CAMTACTE_TLS_CERT: /data/tls/server.crt
       CAMTACTE_TLS_KEY: /data/tls/server.key
       CAMTACTE_MASTER_KEY_FILE: /data/secrets/master.key
+      CAMTACTE_SETUP_TOKEN: ${CAMTACTE_SETUP_TOKEN:-}
       CAMTACTE_MEDIA_URL: http://mediamtx:8888
       CAMTACTE_MEDIA_API: http://mediamtx:9997
       CAMTACTE_MEDIA_RECORDINGS: /data/recordings

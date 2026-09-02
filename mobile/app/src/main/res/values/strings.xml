@@ -6,6 +6,8 @@
     <string name="server_url">Endereço do servidor</string>
     <string name="pair_code">Código de pareamento</string>
     <string name="connect">Conectar</string>
+    <string name="scan_qr">Escanear QR code</string>
+    <string name="scan_qr_prompt">Aponte para o QR mostrado pelo Camtacte</string>
     <string name="cameras">Câmeras</string>
     <string name="events">Eventos</string>
     <string name="rules">Regras</string>
