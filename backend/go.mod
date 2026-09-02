@@ -3,7 +3,7 @@ module github.com/ferforastieri/camtacte/backend
 go 1.26.0
 
 require (
-	github.com/coder/websocket v1.8.14
+	github.com/coder/websocket v1.8.15
 	github.com/google/uuid v1.6.0
 	github.com/k2-fsa/sherpa-onnx-go v1.13.7
 	modernc.org/sqlite v1.39.1
