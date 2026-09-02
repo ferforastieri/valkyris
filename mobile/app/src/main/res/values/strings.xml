@@ -57,7 +57,7 @@
     <string name="permission_allowed">Permitido</string>
     <string name="permission_required">Permissão necessária</string>
     <string name="disconnect_phone">Desconectar este celular</string>
-    <string name="local_only">Valkyris 0.3 · somente LAN / VPN</string>
+    <string name="local_only">Valkyris 0.4 · somente LAN / VPN</string>
     <string name="record_media">Salvar snapshot e clipe</string>
     <string name="send_notification">Enviar notificação persistente</string>
     <string name="confirmations">Confirmações</string>

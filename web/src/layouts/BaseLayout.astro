@@ -18,7 +18,8 @@ const { locale, title, description } = Astro.props;
     <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
     <link rel="alternate" hreflang="pt-BR" href={new URL('/pt-BR', Astro.site)} />
     <link rel="alternate" hreflang="en" href={new URL('/en', Astro.site)} />
-    <link rel="icon" href="/valkyris-mark.png" type="image/png" />
+    <link rel="icon" href="/favicon.png" type="image/png" sizes="64x64" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
     <title>{title}</title>
     <script is:inline>
       const saved = localStorage.getItem('valkyris-theme');

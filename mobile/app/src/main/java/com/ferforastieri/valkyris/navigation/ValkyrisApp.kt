@@ -1,5 +1,9 @@
 package com.ferforastieri.valkyris.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -65,30 +69,43 @@ fun ValkyrisApp(main: MainViewModel) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            Surface(
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 12.dp,
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
             ) {
-                NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
-                    val entry by nav.currentBackStackEntryAsState()
-                    destinations.forEach { destination ->
-                        NavigationBarItem(
-                            selected = entry?.destination?.route == destination.route,
-                            onClick = {
-                                nav.navigate(destination.route) {
-                                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = { Icon(destination.icon, null) },
-                            label = { Text(stringResource(destination.label)) },
-                            colors = NavigationBarItemDefaults.colors(
-                                indicatorColor = MaterialTheme.colorScheme.secondary,
-                                selectedIconColor = MaterialTheme.colorScheme.onSecondary,
-                            ),
-                        )
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 12.dp,
+                    tonalElevation = 1.dp,
+                ) {
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        tonalElevation = 0.dp,
+                        windowInsets = WindowInsets(0, 0, 0, 0),
+                    ) {
+                        val entry by nav.currentBackStackEntryAsState()
+                        destinations.forEach { destination ->
+                            NavigationBarItem(
+                                selected = entry?.destination?.route == destination.route,
+                                onClick = {
+                                    nav.navigate(destination.route) {
+                                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                },
+                                icon = { Icon(destination.icon, null) },
+                                label = { Text(stringResource(destination.label)) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    indicatorColor = MaterialTheme.colorScheme.secondary,
+                                    selectedIconColor = MaterialTheme.colorScheme.onSecondary,
+                                ),
+                            )
+                        }
                     }
                 }
             }

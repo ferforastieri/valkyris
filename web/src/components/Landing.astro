@@ -1,5 +1,5 @@
 ---
-import { ArrowRight, BellRing, Check, ChevronDown, CodeXml, Download, Languages, LockKeyhole, Menu, Moon, Server, ShieldCheck, Sun, Video, Wifi } from '@lucide/astro';
+import { ArrowRight, BadgeCheck, BellRing, Check, ChevronDown, CodeXml, Download, House, Languages, LockKeyhole, Moon, Server, ShieldCheck, Sun, Video, Waypoints, Wifi } from '@lucide/astro';
 import { copy, type Locale } from '../content/copy';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Signal from './Signal.astro';
@@ -10,19 +10,6 @@ const other = locale === 'pt-BR' ? '/en' : '/pt-BR';
 const command = 'curl -fsSL https://valkyris.vercel.app/install.sh | sh';
 ---
 <BaseLayout locale={locale} title={t.metaTitle} description={t.metaDescription}>
-  <header class="topbar">
-    <a class="brand" href={`/${locale}`} aria-label="Valkyris home"><span class="brand-mark"><img src="/valkyris-mark.png" alt="" /></span><span>Valkyris</span></a>
-    <nav id="site-navigation" aria-label="Main navigation">
-      <a href="#overview">{t.nav[0]}</a><a href="#flow">{t.nav[1]}</a><a href="#install">{t.nav[2]}</a><a href="#compatibility">{t.nav[3]}</a>
-    </nav>
-    <div class="top-actions">
-      <a class="icon-button" href={other} aria-label="Change language"><Languages size={18} /></a>
-      <button class="icon-button theme-toggle" type="button" aria-label="Toggle theme"><Sun class="sun" size={18}/><Moon class="moon" size={18}/></button>
-      <a class="button small dark" href="https://github.com/ferforastieri/valkyris"><CodeXml size={16}/><span>GitHub</span></a>
-      <button class="icon-button menu-toggle" type="button" aria-label="Open navigation" aria-controls="site-navigation" aria-expanded="false"><Menu size={19}/></button>
-    </div>
-  </header>
-
   <main>
     <section class="hero" id="overview">
       <div class="hero-copy reveal">
@@ -89,16 +76,27 @@ const command = 'curl -fsSL https://valkyris.vercel.app/install.sh | sh';
     <section class="faq section"><div><p class="eyebrow"><span></span>FAQ</p><h2>{t.faqTitle}</h2></div><div class="faq-list">{t.faq.map(([q,a])=><details><summary>{q}<ChevronDown size={18}/></summary><p>{a}</p></details>)}</div></section>
   </main>
 
-  <footer><div class="footer-brand"><span class="brand-mark"><img src="/valkyris-mark.png" alt="" /></span><strong>Valkyris</strong></div><p>{t.footer}<br/><small>{t.disclaimer}</small></p><div><a href="https://github.com/ferforastieri/valkyris">GitHub</a><a href="/openapi.yaml">OpenAPI</a><a href={other}>{locale==='pt-BR'?'English':'Português'}</a></div></footer>
+  <nav class="floating-dock" aria-label="Main navigation">
+    <a class="dock-brand" href={`/${locale}`} aria-label="Valkyris home">
+      <span class="brand-mark"><img src="/valkyris-mark.png" alt="" /></span>
+      <span class="dock-identity"><strong>Valkyris</strong><small title={t.disclaimer}>© 2026 · MIT</small></span>
+    </a>
+    <div class="dock-links">
+      <a class="dock-link" href="#overview"><House size={17}/><span>{t.nav[0]}</span></a>
+      <a class="dock-link" href="#flow"><Waypoints size={17}/><span>{t.nav[1]}</span></a>
+      <a class="dock-link" href="#install"><Download size={17}/><span>{t.nav[2]}</span></a>
+      <a class="dock-link" href="#compatibility"><BadgeCheck size={17}/><span>{t.nav[3]}</span></a>
+    </div>
+    <div class="dock-actions">
+      <a class="icon-button" href={other} aria-label="Change language"><Languages size={18}/></a>
+      <button class="icon-button theme-toggle" type="button" aria-label="Toggle theme"><Sun class="sun" size={18}/><Moon class="moon" size={18}/></button>
+      <a class="icon-button" href="https://github.com/ferforastieri/valkyris" aria-label="GitHub"><CodeXml size={18}/></a>
+    </div>
+  </nav>
 
   <script>
     const root=document.documentElement;
     document.querySelector('.theme-toggle')?.addEventListener('click',()=>{const current=root.dataset.theme;const dark=current==='dark'||(current==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);root.dataset.theme=dark?'light':'dark';localStorage.setItem('valkyris-theme',root.dataset.theme)});
-    const menu=document.querySelector('.menu-toggle');
-    const navigation=document.querySelector('#site-navigation');
-    const closeNavigation=()=>{navigation?.removeAttribute('data-open');menu?.setAttribute('aria-expanded','false')};
-    menu?.addEventListener('click',()=>{const open=navigation?.toggleAttribute('data-open');menu.setAttribute('aria-expanded',String(Boolean(open)))});
-    navigation?.querySelectorAll('a').forEach((link)=>link.addEventListener('click',closeNavigation));
     document.querySelector('.copy-command')?.addEventListener('click',async(event)=>{const button=event.currentTarget as HTMLButtonElement;await navigator.clipboard.writeText(button.dataset.command||'');const previous=button.textContent;button.textContent='COPIED';setTimeout(()=>button.textContent=previous,1400)});
   </script>
 </BaseLayout>

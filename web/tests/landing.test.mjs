@@ -17,8 +17,13 @@ test('controles e navegação possuem nomes acessíveis', () => {
   assert.match(pt, /aria-label="[^"]+"/);
   assert.match(pt, /href="\/en"/);
   assert.match(en, /href="\/pt-BR"/);
-  assert.match(pt, /aria-controls="site-navigation"/);
+  assert.match(pt, /class="floating-dock"/);
+  assert.doesNotMatch(pt, /<header[\s>]/);
+  assert.doesNotMatch(pt, /<footer[\s>]/);
+  assert.match(pt, /© 2026 · MIT/);
   assert.match(pt, /valkyris-mark\.png/);
+  assert.match(pt, /href="\/favicon\.png"/);
+  assert.match(pt, /href="\/apple-touch-icon\.png"/);
 });
 
 test('respeita a preferência por movimento reduzido', async () => {
@@ -27,11 +32,14 @@ test('respeita a preferência por movimento reduzido', async () => {
   const styles = (await Promise.all(files.map((file) => readFile(new URL(file, assets), 'utf8')))).join('\n');
   assert.match(styles, /prefers-reduced-motion:reduce/);
   assert.match(styles, /\.phone-stage\{height:auto;display:grid/);
+  assert.match(styles, /\.floating-dock\{position:fixed/);
 });
 
 test('artefatos públicos acompanham a documentação', async () => {
   const installer = await readFile(new URL('../dist/install.sh', import.meta.url), 'utf8');
   const openapi = await readFile(new URL('../dist/openapi.yaml', import.meta.url), 'utf8');
+  const favicon = await readFile(new URL('../dist/favicon.png', import.meta.url));
   assert.match(installer, /^#!\/bin\/sh/);
   assert.match(openapi, /^openapi: 3\.1\.0/);
+  assert.ok(favicon.length > 1_000);
 });
