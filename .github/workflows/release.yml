@@ -57,7 +57,7 @@ jobs:
       - uses: android-actions/setup-android@v3
       - name: SDK Android 36
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Preparar chave de assinatura
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
