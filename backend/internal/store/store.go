@@ -28,22 +28,43 @@ func Open(path string) (*Store, error) {
 		return nil, fmt.Errorf("apply schema: %w", err)
 	}
 	for _, migration := range []struct {
+		table  string
 		column string
 		query  string
+		after  string
 	}{
-		{"media_xaddr", `ALTER TABLE cameras ADD COLUMN media_xaddr TEXT NOT NULL DEFAULT ''`},
-		{"events_xaddr", `ALTER TABLE cameras ADD COLUMN events_xaddr TEXT NOT NULL DEFAULT ''`},
-		{"ptz_xaddr", `ALTER TABLE cameras ADD COLUMN ptz_xaddr TEXT NOT NULL DEFAULT ''`},
+		{"cameras", "media_xaddr", `ALTER TABLE cameras ADD COLUMN media_xaddr TEXT NOT NULL DEFAULT ''`, ""},
+		{"cameras", "events_xaddr", `ALTER TABLE cameras ADD COLUMN events_xaddr TEXT NOT NULL DEFAULT ''`, ""},
+		{"cameras", "ptz_xaddr", `ALTER TABLE cameras ADD COLUMN ptz_xaddr TEXT NOT NULL DEFAULT ''`, ""},
+		// Devices paired by releases without roles were trusted setup devices.
+		{"devices", "is_admin", `ALTER TABLE devices ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0`, `UPDATE devices SET is_admin=1`},
 	} {
-		exists, migrationErr := columnExists(ctx, db, "cameras", migration.column)
+		exists, migrationErr := columnExists(ctx, db, migration.table, migration.column)
 		if migrationErr != nil {
 			db.Close()
 			return nil, migrationErr
 		}
 		if !exists {
-			if _, migrationErr = db.ExecContext(ctx, migration.query); migrationErr != nil {
+			tx, beginErr := db.BeginTx(ctx, nil)
+			if beginErr != nil {
 				db.Close()
-				return nil, fmt.Errorf("migrate cameras.%s: %w", migration.column, migrationErr)
+				return nil, fmt.Errorf("begin migration %s.%s: %w", migration.table, migration.column, beginErr)
+			}
+			if _, migrationErr = tx.ExecContext(ctx, migration.query); migrationErr != nil {
+				tx.Rollback()
+				db.Close()
+				return nil, fmt.Errorf("migrate %s.%s: %w", migration.table, migration.column, migrationErr)
+			}
+			if migration.after != "" {
+				if _, migrationErr = tx.ExecContext(ctx, migration.after); migrationErr != nil {
+					tx.Rollback()
+					db.Close()
+					return nil, fmt.Errorf("finalize migration %s.%s: %w", migration.table, migration.column, migrationErr)
+				}
+			}
+			if migrationErr = tx.Commit(); migrationErr != nil {
+				db.Close()
+				return nil, fmt.Errorf("commit migration %s.%s: %w", migration.table, migration.column, migrationErr)
 			}
 		}
 	}

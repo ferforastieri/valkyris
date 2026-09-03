@@ -2,13 +2,35 @@ package com.ferforastieri.valkyris.feature.onboarding
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Login
 import androidx.compose.material.icons.rounded.QrCodeScanner
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -25,22 +47,15 @@ import com.journeyapps.barcodescanner.ScanOptions
 
 @Composable
 fun OnboardingScreen(viewModel: MainViewModel) {
-    var url by remember { mutableStateOf("https://valkyris.local:8443") }
-    var code by remember { mutableStateOf("") }
-    var fingerprint by remember { mutableStateOf("") }
-    val draft by viewModel.pairingDraft.collectAsStateWithLifecycle()
+    var url by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirmation by remember { mutableStateOf("") }
     val error by viewModel.error.collectAsStateWithLifecycle()
-    val scanPrompt = stringResource(R.string.scan_qr_prompt)
+    val connecting by viewModel.connecting.collectAsStateWithLifecycle()
+    val initialized by viewModel.authInitialized.collectAsStateWithLifecycle()
+    val scanPrompt = stringResource(R.string.scan_invite_prompt)
     val scanner = rememberLauncherForActivityResult(ScanContract()) { result ->
         result.contents?.let { viewModel.acceptPairingLink(Uri.parse(it)) }
-    }
-
-    LaunchedEffect(draft) {
-        draft?.let {
-            url = it.url
-            code = it.code.uppercase()
-            fingerprint = it.fingerprint.uppercase()
-        }
     }
 
     Column(
@@ -53,13 +68,84 @@ fun OnboardingScreen(viewModel: MainViewModel) {
         verticalArrangement = Arrangement.Center,
     ) {
         Column(Modifier.fillMaxWidth().widthIn(max = 560.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Surface(shape = MaterialTheme.shapes.extraLarge, shadowElevation = 8.dp, border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+            Surface(
+                shape = MaterialTheme.shapes.extraLarge,
+                shadowElevation = 8.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            ) {
                 Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     ValkyrisMark(Modifier.size(78.dp))
-                    Text(stringResource(R.string.pair_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
-                    Text(stringResource(R.string.pair_body), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.login_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.login_body), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     SignalLine(Modifier.fillMaxWidth().height(52.dp))
+                    OutlinedTextField(
+                        url,
+                        { url = it; viewModel.resetAuthStatus() },
+                        Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.server_url)) },
+                        placeholder = { Text("https://valkyris.example.com") },
+                        enabled = initialized == null && !connecting,
+                        singleLine = true,
+                    )
+                    if (initialized != null) {
+                        Text(
+                            stringResource(if (initialized == false) R.string.create_admin_body else R.string.login_admin_body),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        OutlinedTextField(
+                            password,
+                            { password = it },
+                            Modifier.fillMaxWidth(),
+                            label = { Text(stringResource(if (initialized == false) R.string.create_home_password else R.string.home_password)) },
+                            visualTransformation = PasswordVisualTransformation(),
+                            singleLine = true,
+                        )
+                        if (initialized == false) {
+                            OutlinedTextField(
+                                confirmation,
+                                { confirmation = it },
+                                Modifier.fillMaxWidth(),
+                                label = { Text(stringResource(R.string.confirm_home_password)) },
+                                visualTransformation = PasswordVisualTransformation(),
+                                singleLine = true,
+                                isError = confirmation.isNotEmpty() && confirmation != password,
+                            )
+                        }
+                    }
+                    error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     Button(
+                        onClick = {
+                            if (initialized == null) viewModel.inspectServer(url)
+                            else viewModel.login(url, password, bootstrap = initialized == false)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !connecting && url.isNotBlank() && (
+                            initialized == null || password.isNotBlank() && (initialized == true || password.length >= 10 && password == confirmation)
+                        ),
+                    ) {
+                        if (connecting) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                        else Icon(Icons.AutoMirrored.Rounded.Login, null)
+                        Text(
+                            stringResource(
+                                when (initialized) {
+                                    null -> R.string.continue_action
+                                    false -> R.string.create_home
+                                    true -> R.string.login
+                                },
+                            ),
+                            Modifier.padding(start = 8.dp),
+                        )
+                    }
+                    if (initialized != null) {
+                        TextButton(
+                            onClick = { password = ""; confirmation = ""; viewModel.resetAuthStatus() },
+                            modifier = Modifier.align(Alignment.End),
+                        ) { Text(stringResource(R.string.change_server)) }
+                    }
+                    Spacer(Modifier.height(2.dp))
+                    Text(stringResource(R.string.invited_question), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedButton(
                         onClick = {
                             scanner.launch(
                                 ScanOptions()
@@ -70,20 +156,19 @@ fun OnboardingScreen(viewModel: MainViewModel) {
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = !connecting,
                     ) {
                         Icon(Icons.Rounded.QrCodeScanner, null)
-                        Text(stringResource(R.string.scan_qr), Modifier.padding(start = 8.dp))
-                    }
-                    OutlinedTextField(url, { url = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.server_url)) }, singleLine = true)
-                    OutlinedTextField(code, { code = it.uppercase() }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.pair_code)) }, visualTransformation = PasswordVisualTransformation(), singleLine = true)
-                    OutlinedTextField(fingerprint, { fingerprint = it.uppercase() }, Modifier.fillMaxWidth(), label = { Text("SHA-256 fingerprint") }, singleLine = true)
-                    error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                    OutlinedButton({ viewModel.pair(url, code, fingerprint) }, Modifier.fillMaxWidth(), enabled = code.isNotBlank() && fingerprint.isNotBlank()) {
-                        Text(stringResource(R.string.connect))
+                        Text(stringResource(R.string.scan_invite), Modifier.padding(start = 8.dp))
                     }
                 }
             }
-            Text("Valkyris · local-first", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
+            Text(
+                "Valkyris · local-first",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
         }
     }
 }

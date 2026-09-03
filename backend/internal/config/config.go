@@ -11,7 +11,6 @@ type Config struct {
 	Listen          string
 	DataDir         string
 	DatabasePath    string
-	PublicURL       string
 	TLSCert         string
 	TLSKey          string
 	MasterKeyFile   string
@@ -22,7 +21,6 @@ type Config struct {
 	RetentionAge    time.Duration
 	RetentionBytes  int64
 	PairingLifetime time.Duration
-	SetupToken      string
 }
 
 func Load() Config {
@@ -31,7 +29,6 @@ func Load() Config {
 		Listen:          env("VALKYRIS_LISTEN", ":8443"),
 		DataDir:         data,
 		DatabasePath:    env("VALKYRIS_DATABASE", filepath.Join(data, "valkyris.db")),
-		PublicURL:       env("VALKYRIS_PUBLIC_URL", "https://localhost:8443"),
 		TLSCert:         env("VALKYRIS_TLS_CERT", filepath.Join(data, "tls", "server.crt")),
 		TLSKey:          env("VALKYRIS_TLS_KEY", filepath.Join(data, "tls", "server.key")),
 		MasterKeyFile:   env("VALKYRIS_MASTER_KEY_FILE", filepath.Join(data, "secrets", "master.key")),
@@ -42,7 +39,6 @@ func Load() Config {
 		RetentionAge:    7 * 24 * time.Hour,
 		RetentionBytes:  5 * 1024 * 1024 * 1024,
 		PairingLifetime: 10 * time.Minute,
-		SetupToken:      os.Getenv("VALKYRIS_SETUP_TOKEN"),
 	}
 }
 

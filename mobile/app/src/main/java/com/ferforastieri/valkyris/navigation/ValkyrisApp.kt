@@ -60,6 +60,8 @@ fun ValkyrisApp(main: MainViewModel) {
         return
     }
     val nav = rememberNavController()
+    val entry by nav.currentBackStackEntryAsState()
+    val showBottomBar = destinations.any { it.route == entry?.destination?.route }
     val pendingEvent by main.pendingEvent.collectAsStateWithLifecycle()
     LaunchedEffect(pendingEvent) {
         pendingEvent?.let {
@@ -71,7 +73,7 @@ fun ValkyrisApp(main: MainViewModel) {
         modifier = Modifier.imePadding(),
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            Box(
+            if (showBottomBar) Box(
                 Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
@@ -89,7 +91,6 @@ fun ValkyrisApp(main: MainViewModel) {
                         tonalElevation = 0.dp,
                         windowInsets = WindowInsets(0, 0, 0, 0),
                     ) {
-                        val entry by nav.currentBackStackEntryAsState()
                         destinations.forEach { destination ->
                             NavigationBarItem(
                                 selected = entry?.destination?.route == destination.route,

@@ -1,5 +1,6 @@
 package com.ferforastieri.valkyris.core.network
 
+import android.net.Uri
 import com.ferforastieri.valkyris.core.model.*
 import com.ferforastieri.valkyris.core.security.Session
 import io.ktor.client.HttpClient
@@ -27,7 +28,11 @@ class ValkyrisApi(private val session:()->Session?) {
     private fun base()=requireNotNull(session()){ "Valkyris is not paired" }.baseUrl+"/api/v1"
     private suspend inline fun <reified T> get(path:String):T=client(requireNotNull(session()).fingerprint).use{it.get(base()+path){bearerAuth(requireNotNull(session()).token)}.body()}
     private suspend inline fun <reified T,reified B> post(path:String,body:B):T=client(requireNotNull(session()).fingerprint).use{it.post(base()+path){bearerAuth(requireNotNull(session()).token);contentType(ContentType.Application.Json);setBody(body)}.body()}
+    suspend fun authStatus(baseUrl:String):AuthStatus=client("").use{it.get(baseUrl.trimEnd('/')+"/api/v1/auth/status").body()}
+    suspend fun login(baseUrl:String,request:LoginRequest,bootstrap:Boolean=false):PairResponse=client("").use{it.post(baseUrl.trimEnd('/')+if(bootstrap)"/api/v1/admin/bootstrap" else "/api/v1/login"){contentType(ContentType.Application.Json);setBody(request)}.body()}
     suspend fun pair(baseUrl:String,fingerprint:String,request:PairRequest):PairResponse=client(fingerprint).use{it.post(baseUrl.trimEnd('/')+"/api/v1/pair"){contentType(ContentType.Application.Json);setBody(request)}.body()}
+    suspend fun createPairingSession():PairingSession=client(requireNotNull(session()).fingerprint).use{it.post(base()+"/pairing-sessions"){bearerAuth(requireNotNull(session()).token)}.body()}
+    fun invitationUri(pairing:PairingSession):String {val current=requireNotNull(session());return Uri.Builder().scheme("valkyris").authority("pair").appendQueryParameter("url",current.baseUrl).appendQueryParameter("code",pairing.code).apply{if(current.fingerprint.isNotBlank())appendQueryParameter("fingerprint",current.fingerprint)}.build().toString()}
     suspend fun cameras():List<Camera> = get("/cameras")
     suspend fun createCamera(camera:CreateCameraRequest):Camera = post("/cameras",camera)
     suspend fun events():List<ValkyrisEvent> = get("/events?limit=100")

@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS devices (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   token_hash BLOB NOT NULL UNIQUE,
+  is_admin INTEGER NOT NULL DEFAULT 0,
   push_endpoint_enc BLOB,
   push_secret_enc BLOB,
   locale TEXT NOT NULL DEFAULT 'pt-BR',

@@ -16,20 +16,23 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 import javax.inject.Inject
 
-data class PairingDraft(val url:String,val code:String,val fingerprint:String)
-
 @HiltViewModel class MainViewModel @Inject constructor(private val api:ValkyrisApi,private val sessions:SessionStore,private val preferences:AppPreferences):ViewModel(){
     private val _paired=MutableStateFlow(sessions.get()!=null);val paired=_paired.asStateFlow()
+    private val _admin=MutableStateFlow(sessions.get()?.admin==true);val admin=_admin.asStateFlow()
+    private val _connecting=MutableStateFlow(false);val connecting=_connecting.asStateFlow()
+    private val _authInitialized=MutableStateFlow<Boolean?>(null);val authInitialized=_authInitialized.asStateFlow()
     private val _error=MutableStateFlow<String?>(null);val error=_error.asStateFlow()
-    private val _pairingDraft=MutableStateFlow<PairingDraft?>(null);val pairingDraft=_pairingDraft.asStateFlow()
     private val _pendingEvent=MutableStateFlow<String?>(null);val pendingEvent=_pendingEvent.asStateFlow()
     val theme=preferences.theme.stateIn(viewModelScope,SharingStarted.Eagerly,"system")
     val language=preferences.language.stateIn(viewModelScope,SharingStarted.Eagerly,"system")
-    fun acceptPairingLink(uri:Uri?){if(uri?.scheme!="valkyris"||uri.host!="pair")return;val url=uri.getQueryParameter("url").orEmpty();val code=uri.getQueryParameter("code").orEmpty();val fingerprint=uri.getQueryParameter("fingerprint").orEmpty();if(url.startsWith("https://")&&code.isNotBlank()&&fingerprint.isNotBlank()){_pairingDraft.value=PairingDraft(url,code,fingerprint);pair(url,code,fingerprint)}}
+    fun acceptPairingLink(uri:Uri?){if(uri?.scheme!="valkyris"||uri.host!="pair")return;val url=uri.getQueryParameter("url").orEmpty();val code=uri.getQueryParameter("code").orEmpty();val fingerprint=uri.getQueryParameter("fingerprint").orEmpty();if(url.startsWith("https://")&&code.isNotBlank())pair(url,code,fingerprint)}
     fun acceptLaunch(uri:Uri?,eventId:String?){acceptPairingLink(uri);val deepLinkId=if(uri?.scheme=="valkyris"&&uri.host=="event")uri.lastPathSegment else null;_pendingEvent.value=eventId?.takeIf(String::isNotBlank)?:deepLinkId?.takeIf(String::isNotBlank)}
     fun eventOpened(){_pendingEvent.value=null}
-    fun pair(url:String,code:String,fingerprint:String){viewModelScope.launch{runCatching{api.pair(url,fingerprint,com.ferforastieri.valkyris.core.model.PairRequest(code,android.os.Build.MODEL,Locale.getDefault().toLanguageTag()))}.onSuccess{sessions.save(Session(url,it.token,fingerprint));_paired.value=true;_error.value=null}.onFailure{_error.value=it.message}}}
-    fun signOut(){sessions.clear();_paired.value=false}
+    fun resetAuthStatus(){_authInitialized.value=null;_error.value=null}
+    fun inspectServer(url:String){val base=url.trim().trimEnd('/');if(!base.startsWith("https://")){_error.value="Use um endereço HTTPS válido.";return};viewModelScope.launch{_connecting.value=true;_error.value=null;runCatching{api.authStatus(base)}.onSuccess{_authInitialized.value=it.initialized}.onFailure{_error.value=it.message};_connecting.value=false}}
+    fun login(url:String,password:String,bootstrap:Boolean){val base=url.trim().trimEnd('/');if(!base.startsWith("https://")||password.isBlank()){_error.value="Use um endereço HTTPS e informe a senha da casa.";return};viewModelScope.launch{_connecting.value=true;_error.value=null;runCatching{api.login(base,com.ferforastieri.valkyris.core.model.LoginRequest(password,android.os.Build.MODEL,Locale.getDefault().toLanguageTag()),bootstrap)}.onSuccess{sessions.save(Session(base,it.token,admin=it.admin));_admin.value=it.admin;_paired.value=true}.onFailure{_error.value=it.message};_connecting.value=false}}
+    private fun pair(url:String,code:String,fingerprint:String){viewModelScope.launch{_connecting.value=true;_error.value=null;runCatching{api.pair(url,fingerprint,com.ferforastieri.valkyris.core.model.PairRequest(code,android.os.Build.MODEL,Locale.getDefault().toLanguageTag()))}.onSuccess{sessions.save(Session(url,it.token,fingerprint,it.admin));_admin.value=it.admin;_paired.value=true}.onFailure{_error.value=it.message};_connecting.value=false}}
+    fun signOut(){sessions.clear();_admin.value=false;_paired.value=false}
     fun setTheme(value:String){viewModelScope.launch{preferences.setTheme(value)}}
     fun setLanguage(value:String){viewModelScope.launch{preferences.setLanguage(value)}}
 }

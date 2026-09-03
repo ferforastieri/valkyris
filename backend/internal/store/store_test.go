@@ -36,3 +36,36 @@ func TestOpenMigratesONVIFServiceAddresses(t *testing.T) {
 		}
 	}
 }
+
+func TestOpenPromotesLegacyDevicesWithoutChangingNewDefault(t *testing.T) {
+	path := t.TempDir() + "/legacy-devices.db"
+	legacy, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = legacy.Exec(`CREATE TABLE devices (
+      id TEXT PRIMARY KEY, name TEXT NOT NULL, token_hash BLOB NOT NULL UNIQUE,
+      push_endpoint_enc BLOB, push_secret_enc BLOB, locale TEXT NOT NULL DEFAULT 'pt-BR',
+      enabled INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL, last_seen_at TEXT
+    ); INSERT INTO devices(id,name,token_hash,created_at) VALUES('legacy','Owner',x'01','now')`)
+	legacy.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	db, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	var legacyAdmin int
+	if err = db.DB.QueryRow(`SELECT is_admin FROM devices WHERE id='legacy'`).Scan(&legacyAdmin); err != nil || legacyAdmin != 1 {
+		t.Fatalf("legacy device was not promoted: admin=%d err=%v", legacyAdmin, err)
+	}
+	if _, err = db.DB.Exec(`INSERT INTO devices(id,name,token_hash,created_at) VALUES('new','Guest',x'02','now')`); err != nil {
+		t.Fatal(err)
+	}
+	var newAdmin int
+	if err = db.DB.QueryRow(`SELECT is_admin FROM devices WHERE id='new'`).Scan(&newAdmin); err != nil || newAdmin != 0 {
+		t.Fatalf("new device did not retain least-privilege default: admin=%d err=%v", newAdmin, err)
+	}
+}

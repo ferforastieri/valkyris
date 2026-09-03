@@ -62,23 +62,19 @@ done
 LAN_ADDRESS="$(hostname -I 2>/dev/null | awk '{ print $1 }')"
 [ -n "$LAN_ADDRESS" ] || LAN_ADDRESS="localhost"
 ENV_FILE="${INSTALL_ROOT}/.env"
-NEW_SETUP_TOKEN="$(od -An -N24 -tx1 /dev/urandom | tr -d ' \n')"
 if [ ! -f "$ENV_FILE" ]; then
   {
     printf 'VALKYRIS_VERSION=%s\n' "$RELEASE_VERSION"
     printf 'VALKYRIS_PORT=8443\n'
-    printf 'VALKYRIS_PUBLIC_URL=https://%s:8443\n' "$LAN_ADDRESS"
-    printf 'VALKYRIS_SETUP_TOKEN=%s\n' "$NEW_SETUP_TOKEN"
   } > "$ENV_FILE"
 else
+  sed '/^VALKYRIS_PUBLIC_URL=/d; /^VALKYRIS_SETUP_TOKEN=/d' "$ENV_FILE" > "${TEMP_ROOT}/env-clean"
+  mv "${TEMP_ROOT}/env-clean" "$ENV_FILE"
   if grep -q '^VALKYRIS_VERSION=' "$ENV_FILE"; then
     sed "s/^VALKYRIS_VERSION=.*/VALKYRIS_VERSION=${RELEASE_VERSION}/" "$ENV_FILE" > "${TEMP_ROOT}/env"
     mv "${TEMP_ROOT}/env" "$ENV_FILE"
   else
     printf '\nVALKYRIS_VERSION=%s\n' "$RELEASE_VERSION" >> "$ENV_FILE"
-  fi
-  if ! grep -q '^VALKYRIS_SETUP_TOKEN=' "$ENV_FILE"; then
-    printf 'VALKYRIS_SETUP_TOKEN=%s\n' "$NEW_SETUP_TOKEN" >> "$ENV_FILE"
   fi
 fi
 chmod 600 "$ENV_FILE"
@@ -87,11 +83,8 @@ printf 'Valkyris: iniciando os serviços em %s...\n' "$INSTALL_ROOT"
 docker compose --project-directory "$INSTALL_ROOT" --env-file "$ENV_FILE" pull
 docker compose --project-directory "$INSTALL_ROOT" --env-file "$ENV_FILE" up -d --remove-orphans
 
-SETUP_TOKEN="$(awk -F= '$1 == "VALKYRIS_SETUP_TOKEN" { print substr($0, index($0, "=") + 1); exit }' "$ENV_FILE")"
-PUBLIC_URL="$(awk -F= '$1 == "VALKYRIS_PUBLIC_URL" { print substr($0, index($0, "=") + 1); exit }' "$ENV_FILE")"
 PORT="$(awk -F= '$1 == "VALKYRIS_PORT" { print substr($0, index($0, "=") + 1); exit }' "$ENV_FILE")"
 [ -n "$PORT" ] || PORT=8443
-[ -n "$PUBLIC_URL" ] || PUBLIC_URL="https://${LAN_ADDRESS}:${PORT}"
 
 for attempt in $(seq 1 30); do
   if curl -kfsS --max-time 2 "https://127.0.0.1:${PORT}/health" >/dev/null 2>&1; then
@@ -101,7 +94,6 @@ for attempt in $(seq 1 30); do
   sleep 1
 done
 
-printf '\nValkyris %s está pronto. Escaneie com o app:\n\n' "$RELEASE_VERSION"
-curl -kfsS --max-time 10 -H "X-Valkyris-Setup-Key: ${SETUP_TOKEN}" \
-  "https://127.0.0.1:${PORT}/setup/terminal" || fail "não foi possível gerar o QR code."
-printf '\nOu abra esta página na sua rede local:\n%s/setup?key=%s\n' "$PUBLIC_URL" "$SETUP_TOKEN"
+printf '\nValkyris %s está pronto. Abra o app para criar o primeiro administrador:\n\n' "$RELEASE_VERSION"
+printf 'Endereço local: https://%s:%s\n' "$LAN_ADDRESS" "$PORT"
+printf '\nSe você usa Caddy ou outro proxy, informe o domínio HTTPS no app no lugar do endereço local.\n'

@@ -5,12 +5,9 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/hex"
 	"encoding/pem"
-	"fmt"
 	"log/slog"
 	"math/big"
 	"net"
@@ -18,7 +15,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
 
@@ -49,7 +45,6 @@ func main() {
 		logger.Error("prepare TLS", "error", err)
 		os.Exit(1)
 	}
-	fingerprint, _ := certificateFingerprint(cfg.TLSCert)
 	db, err := store.Open(cfg.DatabasePath)
 	if err != nil {
 		logger.Error("open store", "error", err)
@@ -72,7 +67,6 @@ func main() {
 	application := &app.Service{Rules: rulesService, Events: eventService, Cameras: cameraRepo, Media: mediaManager, Notify: notifyService, Hub: hub, DataDir: cfg.DataDir, Logger: logger}
 	apiServer := api.NewServer(authManager, cameraRepo, onvif, mediaManager, rulesService, eventService, notifyService, hub, logger)
 	apiServer.SetSubmitter(application)
-	apiServer.SetPairingIdentity(cfg.PublicURL, fingerprint, cfg.SetupToken)
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 	go notifyService.Run(ctx)
@@ -96,9 +90,6 @@ func main() {
 		return err
 	}}
 	go monitor.Run(ctx)
-	if cfg.SetupToken == "" {
-		logger.Warn("local setup page disabled", "reason", "VALKYRIS_SETUP_TOKEN is not configured")
-	}
 	httpServer := &http.Server{Addr: cfg.Listen, Handler: apiServer.Handler(), ReadHeaderTimeout: 10 * time.Second, ReadTimeout: 30 * time.Second, WriteTimeout: 60 * time.Second, IdleTimeout: 2 * time.Minute}
 	go func() {
 		logger.Info("Valkyris listening", "address", cfg.Listen, "version", version)
@@ -161,21 +152,4 @@ func ensureCertificate(certPath, keyPath string) error {
 	}
 	defer keyOut.Close()
 	return pem.Encode(keyOut, &pem.Block{Type: "PRIVATE KEY", Bytes: keyBytes})
-}
-func certificateFingerprint(path string) (string, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return "", err
-	}
-	block, _ := pem.Decode(data)
-	if block == nil {
-		return "", fmt.Errorf("invalid certificate")
-	}
-	sum := sha256.Sum256(block.Bytes)
-	encoded := strings.ToUpper(hex.EncodeToString(sum[:]))
-	parts := make([]string, 0, 32)
-	for i := 0; i < len(encoded); i += 2 {
-		parts = append(parts, encoded[i:i+2])
-	}
-	return strings.Join(parts, ":"), nil
 }

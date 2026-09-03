@@ -18,12 +18,9 @@ func TestPairingIsOneTimeAndTokenAuthenticates(t *testing.T) {
 	}
 	defer db.Close()
 	manager := NewManager(db, time.Minute)
-	session, err := manager.CreatePairing(context.Background(), "https://home.local:8443", "AA:BB")
+	session, err := manager.CreatePairing(context.Background())
 	if err != nil {
 		t.Fatal(err)
-	}
-	if !strings.HasPrefix(session.URI, "valkyris://pair?") || !strings.Contains(session.URI, "fingerprint=AA%3ABB") {
-		t.Fatalf("unexpected pairing URI: %s", session.URI)
 	}
 	paired, err := manager.Pair(context.Background(), PairRequest{Code: strings.ToLower(session.Code), DeviceName: "Pixel", Locale: "en"})
 	if err != nil {
@@ -49,6 +46,14 @@ func TestPairingIsOneTimeAndTokenAuthenticates(t *testing.T) {
 	if response.Code != http.StatusNoContent {
 		t.Fatalf("authenticated request returned %d", response.Code)
 	}
+	adminOnly := manager.Middleware(manager.RequireAdmin(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})))
+	forbidden := httptest.NewRecorder()
+	adminOnly.ServeHTTP(forbidden, req)
+	if forbidden.Code != http.StatusForbidden {
+		t.Fatalf("invited device accessed administrator action: %d", forbidden.Code)
+	}
 }
 
 func TestExpiredPairingCodeIsRejected(t *testing.T) {
@@ -58,11 +63,52 @@ func TestExpiredPairingCodeIsRejected(t *testing.T) {
 	}
 	defer db.Close()
 	manager := NewManager(db, -time.Second)
-	session, err := manager.CreatePairing(context.Background(), "https://home", "fingerprint")
+	session, err := manager.CreatePairing(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err = manager.Pair(context.Background(), PairRequest{Code: session.Code, DeviceName: "Phone"}); err == nil {
 		t.Fatal("expired pairing code was accepted")
+	}
+}
+
+func TestAdministratorLoginAndAuthorization(t *testing.T) {
+	db, err := store.Open(t.TempDir() + "/admin.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	manager := NewManager(db, time.Minute)
+	initialized, err := manager.AdminInitialized(context.Background())
+	if err != nil || initialized {
+		t.Fatalf("fresh installation has unexpected admin state: initialized=%v err=%v", initialized, err)
+	}
+	logged, err := manager.BootstrapAdmin(context.Background(), LoginRequest{Password: "correct horse battery staple", DeviceName: "Pixel", Locale: "pt-BR"})
+	if err != nil || !logged.Admin {
+		t.Fatalf("administrator bootstrap failed: response=%+v err=%v", logged, err)
+	}
+	if _, err = manager.BootstrapAdmin(context.Background(), LoginRequest{Password: "another secure password", DeviceName: "Other"}); err == nil {
+		t.Fatal("second administrator bootstrap was accepted")
+	}
+	if _, err = manager.LoginAdmin(context.Background(), LoginRequest{Password: "wrong", DeviceName: "Pixel"}); err == nil {
+		t.Fatal("wrong administrator password was accepted")
+	}
+	second, err := manager.LoginAdmin(context.Background(), LoginRequest{Password: "correct horse battery staple", DeviceName: "Tablet", Locale: "pt-BR"})
+	if err != nil || !second.Admin {
+		t.Fatalf("administrator login failed: response=%+v err=%v", second, err)
+	}
+
+	handler := manager.Middleware(manager.RequireAdmin(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !IsAdmin(r.Context()) {
+			t.Fatal("administrator role was not propagated")
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})))
+	req := httptest.NewRequest(http.MethodPost, "/pairing-sessions", nil)
+	req.Header.Set("Authorization", "Bearer "+second.Token)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, req)
+	if response.Code != http.StatusNoContent {
+		t.Fatalf("administrator request returned %d", response.Code)
 	}
 }

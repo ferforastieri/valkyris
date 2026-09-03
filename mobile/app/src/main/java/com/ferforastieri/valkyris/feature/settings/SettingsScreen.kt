@@ -10,6 +10,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -18,6 +20,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -27,19 +31,25 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.ferforastieri.valkyris.MainViewModel
 import com.ferforastieri.valkyris.R
 import com.ferforastieri.valkyris.core.alarm.AlarmNotifier
 import org.unifiedpush.android.connector.UnifiedPush
+import com.google.zxing.BarcodeFormat
+import com.journeyapps.barcodescanner.BarcodeEncoder
 
 @Composable
-fun SettingsScreen(main: MainViewModel) {
+fun SettingsScreen(main: MainViewModel, viewModel: SettingsViewModel = hiltViewModel()) {
     val context = LocalContext.current
     val manager = context.getSystemService(NotificationManager::class.java)
     var permissionRefresh by remember { mutableIntStateOf(0) }
     var pushStatusRes by remember { mutableIntStateOf(R.string.push_not_configured) }
     val theme by main.theme.collectAsStateWithLifecycle()
     val language by main.language.collectAsStateWithLifecycle()
+    val admin by main.admin.collectAsStateWithLifecycle()
+    val invitation by viewModel.invitation.collectAsStateWithLifecycle()
+    var showInvitation by remember { mutableStateOf(false) }
     val notificationRequest = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         permissionRefresh++
     }
@@ -68,6 +78,15 @@ fun SettingsScreen(main: MainViewModel) {
     ) {
         Text(stringResource(R.string.settings), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(6.dp))
+        if (admin) {
+            SettingsCard(
+                Icons.Rounded.PersonAdd,
+                stringResource(R.string.invite_device),
+                stringResource(R.string.invite_device_body),
+            ) {
+                showInvitation = true
+            }
+        }
         SettingsCard(
             Icons.Rounded.Notifications,
             stringResource(R.string.notification_permission),
@@ -133,6 +152,46 @@ fun SettingsScreen(main: MainViewModel) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+    if (showInvitation) {
+        InvitationDialog(
+            state = invitation,
+            onCreate = viewModel::createInvitation,
+            onDismiss = {
+                showInvitation = false
+                viewModel.clearInvitation()
+            },
+        )
+    }
+}
+
+@Composable
+private fun InvitationDialog(state: InvitationState, onCreate: () -> Unit, onDismiss: () -> Unit) {
+    LaunchedEffect(Unit) { onCreate() }
+    val bitmap = remember(state.uri) {
+        state.uri?.let { runCatching { BarcodeEncoder().encodeBitmap(it, BarcodeFormat.QR_CODE, 720, 720) }.getOrNull() }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.invite_title)) },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                when {
+                    state.loading -> CircularProgressIndicator()
+                    bitmap != null -> {
+                        Image(
+                            bitmap.asImageBitmap(),
+                            contentDescription = stringResource(R.string.invite_title),
+                            modifier = Modifier.fillMaxWidth().background(Color.White, MaterialTheme.shapes.medium).padding(12.dp),
+                        )
+                        Text(stringResource(R.string.invite_expires), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    state.error != null -> Text(state.error, color = MaterialTheme.colorScheme.error)
+                }
+            }
+        },
+        confirmButton = { TextButton(onDismiss) { Text(stringResource(R.string.close)) } },
+        dismissButton = { TextButton(onCreate, enabled = !state.loading) { Text(stringResource(R.string.generate_again)) } },
+    )
 }
 
 @Composable

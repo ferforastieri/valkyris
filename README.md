@@ -31,12 +31,13 @@ cp .env.example .env
 docker compose up --build
 ```
 
-At the end of the installation, the terminal displays a QR code and a private
-local setup URL. Open the Android app, tap **Scan QR code**, and point it at the
-terminal or at the setup page. The page is served directly by the Go backend;
-it does not depend on the Vercel landing page. Pairing codes are one-time and
-expire after ten minutes, while the setup page automatically creates fresh
-ones. Keep the camera and ports 554/2020 private; use a VPN for remote access.
+At the end of the installation, open the Android app and enter the HTTPS address
+through which the phone reaches Valkyris. The first phone creates the home
+password and becomes its administrator; the password is stored only as a bcrypt
+hash. From **Settings**, that administrator can generate a single-use QR invite
+for another phone. Keep the camera and ports 554/2020 private; use a VPN for
+remote access. A reverse proxy such as Caddy can provide the Android-trusted TLS
+certificate for a private domain.
 
 ## Repository
 

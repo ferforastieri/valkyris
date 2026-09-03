@@ -12,10 +12,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/ferforastieri/valkyris/backend/internal/auth"
@@ -34,38 +32,33 @@ type DetectionSubmitter interface {
 	Submit(context.Context, rules.Detection) ([]event.Event, error)
 }
 type Server struct {
-	auth        *auth.Manager
-	cameras     *camera.Repository
-	onvif       *camera.ONVIFClient
-	media       *media.Manager
-	rules       *rules.Service
-	events      *event.Service
-	notify      *notify.Service
-	hub         *Hub
-	submitter   DetectionSubmitter
-	logger      *slog.Logger
-	publicURL   string
-	fingerprint string
-	setupToken  string
+	auth      *auth.Manager
+	cameras   *camera.Repository
+	onvif     *camera.ONVIFClient
+	media     *media.Manager
+	rules     *rules.Service
+	events    *event.Service
+	notify    *notify.Service
+	hub       *Hub
+	submitter DetectionSubmitter
+	logger    *slog.Logger
 }
 
 func NewServer(a *auth.Manager, c *camera.Repository, o *camera.ONVIFClient, m *media.Manager, r *rules.Service, e *event.Service, n *notify.Service, h *Hub, logger *slog.Logger) *Server {
 	return &Server{auth: a, cameras: c, onvif: o, media: m, rules: r, events: e, notify: n, hub: h, logger: logger}
 }
 func (s *Server) SetSubmitter(sub DetectionSubmitter) { s.submitter = sub }
-func (s *Server) SetPairingIdentity(publicURL, fingerprint, setupToken string) {
-	s.publicURL, s.fingerprint, s.setupToken = publicURL, fingerprint, setupToken
-}
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /{$}", s.setupRoot)
-	mux.HandleFunc("GET /setup", s.setupPage)
-	mux.HandleFunc("GET /setup/terminal", s.setupTerminal)
+	mux.HandleFunc("GET /{$}", s.health)
 	mux.HandleFunc("GET /health", s.health)
 	mux.HandleFunc("GET /openapi.yaml", s.openapi)
+	mux.HandleFunc("GET /api/v1/auth/status", s.authStatus)
+	mux.HandleFunc("POST /api/v1/admin/bootstrap", s.bootstrapAdmin)
+	mux.HandleFunc("POST /api/v1/login", s.login)
 	mux.HandleFunc("POST /api/v1/pair", s.pair)
 	protected := http.NewServeMux()
-	protected.HandleFunc("POST /pairing-sessions", s.pairingSession)
+	protected.Handle("POST /pairing-sessions", s.auth.RequireAdmin(http.HandlerFunc(s.pairingSession)))
 	protected.HandleFunc("GET /cameras", s.listCameras)
 	protected.HandleFunc("POST /cameras", s.createCamera)
 	protected.HandleFunc("DELETE /cameras/{id}", s.deleteCamera)
@@ -94,6 +87,47 @@ func (s *Server) openapi(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/yaml")
 	_, _ = w.Write(openAPI)
 }
+func (s *Server) authStatus(w http.ResponseWriter, r *http.Request) {
+	initialized, err := s.auth.AdminInitialized(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"initialized": initialized})
+}
+func (s *Server) bootstrapAdmin(w http.ResponseWriter, r *http.Request) {
+	initialized, err := s.auth.AdminInitialized(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if initialized {
+		writeError(w, http.StatusConflict, fmt.Errorf("administrator is already configured"))
+		return
+	}
+	var in auth.LoginRequest
+	if !decode(w, r, &in) {
+		return
+	}
+	out, err := s.auth.BootstrapAdmin(r.Context(), in)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, out)
+}
+func (s *Server) login(w http.ResponseWriter, r *http.Request) {
+	var in auth.LoginRequest
+	if !decode(w, r, &in) {
+		return
+	}
+	out, err := s.auth.LoginAdmin(r.Context(), in)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, out)
+}
 func (s *Server) pair(w http.ResponseWriter, r *http.Request) {
 	var in auth.PairRequest
 	if !decode(w, r, &in) {
@@ -107,11 +141,7 @@ func (s *Server) pair(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 201, out)
 }
 func (s *Server) pairingSession(w http.ResponseWriter, r *http.Request) {
-	publicURL := s.publicURL
-	if publicURL == "" {
-		publicURL = origin(r)
-	}
-	session, err := s.auth.CreatePairing(r.Context(), publicURL, s.fingerprint)
+	session, err := s.auth.CreatePairing(r.Context())
 	if err != nil {
 		writeError(w, 500, err)
 		return
@@ -366,13 +396,3 @@ func defaultPort(v int) int {
 	}
 	return v
 }
-func origin(r *http.Request) string {
-	scheme := "https"
-	if r.TLS == nil {
-		scheme = "http"
-	}
-	return scheme + "://" + r.Host
-}
-
-var _ = strings.Builder{}
-var _ = os.ErrNotExist

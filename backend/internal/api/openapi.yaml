@@ -8,6 +8,36 @@ servers:
 security:
   - bearerAuth: []
 paths:
+  /auth/status:
+    get:
+      security: []
+      summary: Check whether the first administrator has been created
+      responses:
+        '200': {description: Bootstrap status, content: {application/json: {schema: {$ref: '#/components/schemas/AuthStatus'}}}}
+  /admin/bootstrap:
+    post:
+      security: []
+      summary: Create the home password and first administrator device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoginRequest'}
+      responses:
+        '201': {description: Administrator created, content: {application/json: {schema: {$ref: '#/components/schemas/PairResponse'}}}}
+        '409': {description: Administrator already configured}
+  /login:
+    post:
+      security: []
+      summary: Authenticate an administrator device with the home password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoginRequest'}
+      responses:
+        '201': {description: Authenticated, content: {application/json: {schema: {$ref: '#/components/schemas/PairResponse'}}}}
+        '401': {description: Invalid credentials}
   /pair:
     post:
       security: []
@@ -21,7 +51,7 @@ paths:
         '201': {description: Paired, content: {application/json: {schema: {$ref: '#/components/schemas/PairResponse'}}}}
   /pairing-sessions:
     post:
-      summary: Create a short-lived pairing session
+      summary: Create a short-lived, administrator-only invitation
       responses: {'201': {description: Created, content: {application/json: {schema: {$ref: '#/components/schemas/PairingSession'}}}}}
   /cameras:
     get:
@@ -201,10 +231,19 @@ components:
       properties:
         id: {type: string, format: uuid}
         code: {type: string}
-        publicUrl: {type: string, format: uri}
-        fingerprint: {type: string}
-        uri: {type: string, format: uri}
         expiresAt: {type: string, format: date-time}
+    AuthStatus:
+      type: object
+      required: [initialized]
+      properties:
+        initialized: {type: boolean}
+    LoginRequest:
+      type: object
+      required: [password, deviceName]
+      properties:
+        password: {type: string, format: password, minLength: 10}
+        deviceName: {type: string}
+        locale: {type: string, default: pt-BR}
     PairRequest:
       type: object
       required: [code, deviceName]
@@ -217,6 +256,7 @@ components:
       properties:
         deviceId: {type: string, format: uuid}
         token: {type: string}
+        admin: {type: boolean}
     MediaAsset:
       type: object
       properties:
